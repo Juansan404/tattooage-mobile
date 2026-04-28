@@ -132,7 +132,7 @@ export default function PerfilScreen() {
 
         {/* Botones de acción */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.editBtn}>
+          <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/perfil/editar')}>
             <Text style={styles.editBtnText}>Editar perfil</Text>
           </TouchableOpacity>
           {rol === 'ARTISTA' && (

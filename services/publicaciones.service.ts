@@ -31,12 +31,16 @@ export const publicacionesService = {
   },
 
   async getComentarios(id: number): Promise<Comentario[]> {
-    const response = await api.get<Comentario[]>(`/publicaciones/${id}/comentarios`);
+    const response = await api.get<Comentario[]>(`/comentarios/publicacion/${id}`);
     return response.data;
   },
 
-  async comentar(id: number, contenido: string): Promise<Comentario> {
-    const response = await api.post<Comentario>(`/publicaciones/${id}/comentarios`, { contenido });
+  async comentar(idPublicacion: number, idUsuario: number, contenido: string): Promise<Comentario> {
+    const response = await api.post<Comentario>('/comentarios', {
+      publicacion: { idPublicacion },
+      usuario: { idUsuario },
+      contenido,
+    });
     return response.data;
   },
 

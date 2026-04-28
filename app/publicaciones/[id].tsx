@@ -17,6 +17,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { Publicacion, Comentario } from '../../types/publicacion.types';
+import { useAuthStore } from '../../store/auth.store';
 import { Colors } from '../../constants/colors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
@@ -24,6 +25,7 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 export default function DetallePublicacionScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { idUsuario } = useAuthStore();
 
   const [publicacion, setPublicacion] = useState<Publicacion | null>(null);
   const [comentarios, setComentarios] = useState<Comentario[]>([]);
@@ -51,10 +53,10 @@ export default function DetallePublicacionScreen() {
   }, [id]);
 
   const handleComentar = async () => {
-    if (!nuevoComentario.trim()) return;
+    if (!nuevoComentario.trim() || !idUsuario) return;
     try {
       setEnviando(true);
-      const comentario = await publicacionesService.comentar(Number(id), nuevoComentario.trim());
+      const comentario = await publicacionesService.comentar(Number(id), idUsuario, nuevoComentario.trim());
       setComentarios((prev) => [...prev, comentario]);
       setNuevoComentario('');
     } catch {

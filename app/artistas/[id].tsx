@@ -5,12 +5,12 @@ import {
   Image,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   ActivityIndicator,
   Alert,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { artistasService } from '../../services/artistas.service';
 import { Usuario, PerfilArtista } from '../../types/usuario.types';

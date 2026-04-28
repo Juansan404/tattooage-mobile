@@ -5,7 +5,6 @@ import {
   Image,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
   TextInput,
   KeyboardAvoidingView,
@@ -14,6 +13,7 @@ import {
   Alert,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { Publicacion, Comentario } from '../../types/publicacion.types';

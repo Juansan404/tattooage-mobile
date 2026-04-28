@@ -5,12 +5,12 @@ import {
   FlatList,
   StyleSheet,
   TextInput,
-  SafeAreaView,
   ActivityIndicator,
   Image,
   TouchableOpacity,
   Dimensions,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { Publicacion } from '../../types/publicacion.types';

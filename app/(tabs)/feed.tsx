@@ -6,10 +6,10 @@ import {
   StyleSheet,
   RefreshControl,
   ActivityIndicator,
-  SafeAreaView,
   TouchableOpacity,
   StatusBar,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { Publicacion } from '../../types/publicacion.types';
 import { Colors } from '../../constants/colors';

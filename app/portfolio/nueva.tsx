@@ -13,6 +13,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { Colors } from '../../constants/colors';
@@ -60,7 +61,7 @@ export default function NuevaPublicacionScreen() {
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backText}>‹ Cancelar</Text>
+            <Ionicons name="chevron-back" size={26} color={Colors.textSecondary} />
           </TouchableOpacity>
           <Text style={styles.title}>Nueva publicación</Text>
           <TouchableOpacity onPress={handlePublicar} disabled={loading}>

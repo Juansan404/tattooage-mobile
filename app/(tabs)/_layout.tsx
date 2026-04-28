@@ -1,8 +1,10 @@
 import { Tabs, useRouter } from 'expo-router';
 import { useEffect } from 'react';
-import { Text } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Colors } from '../../constants/colors';
 import { useAuthStore } from '../../store/auth.store';
+
+type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 export default function TabsLayout() {
   const { isAuthenticated, isLoading } = useAuthStore();
@@ -39,42 +41,47 @@ export default function TabsLayout() {
         name="feed"
         options={{
           title: 'Inicio',
-          tabBarIcon: ({ color }) => <TabIcon symbol="🏠" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'home' : 'home-outline'} size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="explore"
         options={{
           title: 'Explorar',
-          tabBarIcon: ({ color }) => <TabIcon symbol="🔍" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'search' : 'search-outline'} size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="solicitudes"
         options={{
           title: 'Solicitudes',
-          tabBarIcon: ({ color }) => <TabIcon symbol="✉️" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'mail' : 'mail-outline'} size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="citas"
         options={{
           title: 'Citas',
-          tabBarIcon: ({ color }) => <TabIcon symbol="📅" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={24} color={color} />
+          ),
         }}
       />
       <Tabs.Screen
         name="perfil"
         options={{
           title: 'Perfil',
-          tabBarIcon: ({ color }) => <TabIcon symbol="👤" color={color} />,
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'person' : 'person-outline'} size={24} color={color} />
+          ),
         }}
       />
     </Tabs>
   );
-}
-
-// Text importado al nivel del módulo, no con require dentro del render
-function TabIcon({ symbol, color }: { symbol: string; color: string }) {
-  return <Text style={{ fontSize: 20, color }}>{symbol}</Text>;
 }

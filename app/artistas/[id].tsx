@@ -11,6 +11,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { artistasService } from '../../services/artistas.service';
 import { Usuario, PerfilArtista } from '../../types/usuario.types';
@@ -85,8 +86,8 @@ export default function PerfilArtistaScreen() {
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header navegación */}
         <View style={styles.navHeader}>
-          <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backText}>‹ Volver</Text>
+          <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+            <Ionicons name="chevron-back" size={26} color={Colors.text} />
           </TouchableOpacity>
         </View>
 

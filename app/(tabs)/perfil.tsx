@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '../../services/api';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { Usuario } from '../../types/usuario.types';
@@ -169,13 +170,13 @@ export default function PerfilScreen() {
           style={[styles.tab, activeTab === 'grid' && styles.tabActive]}
           onPress={() => setActiveTab('grid')}
         >
-          <Text style={[styles.tabIcon, activeTab === 'grid' && styles.tabIconActive]}>⊞</Text>
+          <Ionicons name="grid-outline" size={22} color={activeTab === 'grid' ? Colors.text : Colors.textMuted} />
         </TouchableOpacity>
         <TouchableOpacity
           style={[styles.tab, activeTab === 'tagged' && styles.tabActive]}
           onPress={() => setActiveTab('tagged')}
         >
-          <Text style={[styles.tabIcon, activeTab === 'tagged' && styles.tabIconActive]}>👤</Text>
+          <Ionicons name="person-outline" size={22} color={activeTab === 'tagged' ? Colors.text : Colors.textMuted} />
         </TouchableOpacity>
       </View>
     </View>
@@ -189,7 +190,7 @@ export default function PerfilScreen() {
           {usuario?.nombre?.toLowerCase().replace(/\s+/g, '_') ?? 'mi_perfil'}
         </Text>
         <TouchableOpacity onPress={handleLogout} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={styles.headerMenu}>☰</Text>
+          <Ionicons name="menu-outline" size={28} color={Colors.text} />
         </TouchableOpacity>
       </View>
 
@@ -214,7 +215,7 @@ export default function PerfilScreen() {
           )}
           ListEmptyComponent={
             <View style={styles.emptyGrid}>
-              <Text style={styles.emptyGridIcon}>📷</Text>
+              <Ionicons name="camera-outline" size={56} color={Colors.textMuted} />
               <Text style={styles.emptyGridTitle}>Sin publicaciones</Text>
               <Text style={styles.emptyGridSub}>
                 {rol === 'ARTISTA'
@@ -241,7 +242,7 @@ export default function PerfilScreen() {
           renderItem={() => null}
           ListEmptyComponent={
             <View style={styles.emptyGrid}>
-              <Text style={styles.emptyGridIcon}>🏷️</Text>
+              <Ionicons name="pricetag-outline" size={56} color={Colors.textMuted} />
               <Text style={styles.emptyGridTitle}>Sin etiquetas</Text>
               <Text style={styles.emptyGridSub}>Las fotos en las que te etiqueten aparecerán aquí.</Text>
             </View>

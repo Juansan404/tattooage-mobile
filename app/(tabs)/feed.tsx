@@ -10,6 +10,7 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { Publicacion } from '../../types/publicacion.types';
 import { Colors } from '../../constants/colors';
@@ -63,10 +64,10 @@ export default function FeedScreen() {
         </Text>
         <View style={styles.headerIcons}>
           <TouchableOpacity style={styles.headerIcon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={styles.headerIconText}>❤️</Text>
+            <Ionicons name="heart-outline" size={26} color={Colors.text} />
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerIcon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Text style={styles.headerIconText}>✈️</Text>
+            <Ionicons name="paper-plane-outline" size={26} color={Colors.text} />
           </TouchableOpacity>
         </View>
       </View>

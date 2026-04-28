@@ -14,6 +14,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { Publicacion, Comentario } from '../../types/publicacion.types';
@@ -83,7 +84,7 @@ export default function DetallePublicacionScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-            <Text style={styles.backText}>‹ Volver</Text>
+            <Ionicons name="chevron-back" size={26} color={Colors.text} />
           </TouchableOpacity>
         </View>
 

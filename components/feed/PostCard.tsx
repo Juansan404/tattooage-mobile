@@ -9,6 +9,7 @@ import {
   Dimensions,
 } from 'react-native';
 import { useRouter } from 'expo-router';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { Publicacion } from '../../types/publicacion.types';
 import { Colors } from '../../constants/colors';
 
@@ -40,15 +41,7 @@ export default function PostCard({ publicacion, onLike }: Props) {
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(publicacion.likesCount ?? 0);
 
-  const {
-    idPublicacion,
-    fotoUrl,
-    descripcion,
-    estilo,
-    zonaCuerpo,
-    creadoEn,
-    usuario,
-  } = publicacion;
+  const { idPublicacion, fotoUrl, descripcion, estilo, zonaCuerpo, creadoEn, usuario } = publicacion;
 
   const handleLike = () => {
     setLiked((prev) => !prev);
@@ -88,14 +81,12 @@ export default function PostCard({ publicacion, onLike }: Props) {
           )}
           <View>
             <Text style={styles.authorName}>{usuario?.nombre ?? 'Artista'}</Text>
-            {zonaCuerpo && (
-              <Text style={styles.authorSub}>{zonaCuerpo}</Text>
-            )}
+            {zonaCuerpo && <Text style={styles.authorSub}>{zonaCuerpo}</Text>}
           </View>
         </TouchableOpacity>
 
         <TouchableOpacity style={styles.moreBtn} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={styles.moreIcon}>•••</Text>
+          <Ionicons name="ellipsis-horizontal" size={20} color={Colors.textSecondary} />
         </TouchableOpacity>
       </View>
 
@@ -111,7 +102,7 @@ export default function PostCard({ publicacion, onLike }: Props) {
             />
           ) : (
             <View style={[styles.image, styles.imageFallback]}>
-              <Text style={styles.imageFallbackText}>Sin imagen</Text>
+              <Ionicons name="image-outline" size={48} color={Colors.textMuted} />
             </View>
           )}
         </View>
@@ -120,42 +111,36 @@ export default function PostCard({ publicacion, onLike }: Props) {
       {/* ── Acciones ── */}
       <View style={styles.actions}>
         <View style={styles.actionsLeft}>
-          {/* Like */}
-          <TouchableOpacity
-            style={styles.actionBtn}
-            onPress={handleLike}
-            activeOpacity={0.6}
-          >
-            <Text style={[styles.actionIcon, liked && styles.actionIconLiked]}>
-              {liked ? '❤️' : '🤍'}
-            </Text>
+          <TouchableOpacity style={styles.actionBtn} onPress={handleLike} activeOpacity={0.6}>
+            <Ionicons
+              name={liked ? 'heart' : 'heart-outline'}
+              size={26}
+              color={liked ? Colors.primary : Colors.text}
+            />
           </TouchableOpacity>
 
-          {/* Comentar */}
           <TouchableOpacity
             style={styles.actionBtn}
             onPress={() => router.push(`/publicaciones/${idPublicacion}`)}
             activeOpacity={0.6}
           >
-            <Text style={styles.actionIcon}>💬</Text>
+            <Ionicons name="chatbubble-outline" size={24} color={Colors.text} />
           </TouchableOpacity>
 
-          {/* Compartir */}
           <TouchableOpacity style={styles.actionBtn} activeOpacity={0.6}>
-            <Text style={styles.actionIcon}>✈️</Text>
+            <Ionicons name="paper-plane-outline" size={24} color={Colors.text} />
           </TouchableOpacity>
         </View>
 
-        {/* Guardar */}
         <TouchableOpacity style={styles.actionBtn} activeOpacity={0.6}>
-          <Text style={styles.actionIcon}>🔖</Text>
+          <Ionicons name="bookmark-outline" size={24} color={Colors.text} />
         </TouchableOpacity>
       </View>
 
       {/* ── Likes ── */}
       {likeCount > 0 && (
         <Text style={styles.likesCount}>
-          {likeCount.toLocaleString('es-ES')} {likeCount === 1 ? 'me gusta' : 'me gusta'}
+          {likeCount.toLocaleString('es-ES')} me gusta
         </Text>
       )}
 
@@ -163,9 +148,7 @@ export default function PostCard({ publicacion, onLike }: Props) {
       <View style={styles.captionRow}>
         {descripcion ? (
           <Text style={styles.caption} numberOfLines={2}>
-            <Text style={styles.captionAuthor}>
-              {usuario?.nombre ?? 'artista'}{' '}
-            </Text>
+            <Text style={styles.captionAuthor}>{usuario?.nombre ?? 'artista'} </Text>
             {descripcion}
           </Text>
         ) : null}
@@ -177,10 +160,7 @@ export default function PostCard({ publicacion, onLike }: Props) {
       </View>
 
       {/* ── Ver comentarios ── */}
-      <TouchableOpacity
-        onPress={() => router.push(`/publicaciones/${idPublicacion}`)}
-        activeOpacity={0.7}
-      >
+      <TouchableOpacity onPress={() => router.push(`/publicaciones/${idPublicacion}`)} activeOpacity={0.7}>
         <Text style={styles.viewComments}>Ver comentarios</Text>
       </TouchableOpacity>
 
@@ -191,11 +171,7 @@ export default function PostCard({ publicacion, onLike }: Props) {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    backgroundColor: Colors.background,
-    marginBottom: 8,
-  },
-  /* Header */
+  container: { backgroundColor: Colors.background, marginBottom: 8 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -203,132 +179,34 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
   },
-  authorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-    flex: 1,
-  },
-  avatar: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
-  },
+  authorRow: { flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1 },
+  avatar: { width: 34, height: 34, borderRadius: 17, borderWidth: 1.5, borderColor: Colors.primary },
   avatarPlaceholder: {
-    width: 34,
-    height: 34,
-    borderRadius: 17,
+    width: 34, height: 34, borderRadius: 17,
     backgroundColor: Colors.surfaceLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: Colors.primary,
+    justifyContent: 'center', alignItems: 'center',
+    borderWidth: 1.5, borderColor: Colors.primary,
   },
-  avatarInitial: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-  authorName: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: Colors.text,
-    letterSpacing: 0.1,
-  },
-  authorSub: {
-    fontSize: 11,
-    color: Colors.textMuted,
-    marginTop: 1,
-  },
-  moreBtn: {
-    paddingLeft: 8,
-  },
-  moreIcon: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    letterSpacing: 1,
-    fontWeight: '700',
-  },
-  /* Imagen */
-  image: {
-    width: SCREEN_WIDTH,
-    height: SCREEN_WIDTH,
-    backgroundColor: Colors.surface,
-  },
-  imageFallback: {
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  imageFallbackText: {
-    color: Colors.textMuted,
-    fontSize: 13,
-  },
-  /* Acciones */
+  avatarInitial: { fontSize: 14, fontWeight: '700', color: Colors.primary },
+  authorName: { fontSize: 13.5, fontWeight: '700', color: Colors.text, letterSpacing: 0.1 },
+  authorSub: { fontSize: 11, color: Colors.textMuted, marginTop: 1 },
+  moreBtn: { paddingLeft: 8 },
+  image: { width: SCREEN_WIDTH, height: SCREEN_WIDTH, backgroundColor: Colors.surface },
+  imageFallback: { justifyContent: 'center', alignItems: 'center' },
   actions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 10,
-    paddingTop: 10,
-    paddingBottom: 4,
+    flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+    paddingHorizontal: 10, paddingTop: 10, paddingBottom: 4,
   },
-  actionsLeft: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 14,
-  },
-  actionBtn: {
-    padding: 2,
-  },
-  actionIcon: {
-    fontSize: 24,
-  },
-  actionIconLiked: {
-    // handled by emoji swap
-  },
-  /* Likes */
-  likesCount: {
-    fontSize: 13.5,
-    fontWeight: '700',
-    color: Colors.text,
-    paddingHorizontal: 14,
-    marginBottom: 4,
-  },
-  /* Caption */
-  captionRow: {
-    paddingHorizontal: 14,
-    gap: 3,
-    marginBottom: 2,
-  },
-  caption: {
-    fontSize: 13.5,
-    color: Colors.text,
-    lineHeight: 19,
-  },
-  captionAuthor: {
-    fontWeight: '700',
-  },
-  hashtag: {
-    fontSize: 13,
-    color: '#4A90D9',
-    fontWeight: '500',
-  },
-  /* Comentarios */
-  viewComments: {
-    fontSize: 13,
-    color: Colors.textMuted,
-    paddingHorizontal: 14,
-    marginBottom: 4,
-  },
-  /* Timestamp */
+  actionsLeft: { flexDirection: 'row', alignItems: 'center', gap: 14 },
+  actionBtn: { padding: 2 },
+  likesCount: { fontSize: 13.5, fontWeight: '700', color: Colors.text, paddingHorizontal: 14, marginBottom: 4 },
+  captionRow: { paddingHorizontal: 14, gap: 3, marginBottom: 2 },
+  caption: { fontSize: 13.5, color: Colors.text, lineHeight: 19 },
+  captionAuthor: { fontWeight: '700' },
+  hashtag: { fontSize: 13, color: '#4A90D9', fontWeight: '500' },
+  viewComments: { fontSize: 13, color: Colors.textMuted, paddingHorizontal: 14, marginBottom: 4 },
   timestamp: {
-    fontSize: 10,
-    color: Colors.textMuted,
-    paddingHorizontal: 14,
-    paddingBottom: 12,
-    textTransform: 'uppercase',
-    letterSpacing: 0.4,
+    fontSize: 10, color: Colors.textMuted, paddingHorizontal: 14, paddingBottom: 12,
+    textTransform: 'uppercase', letterSpacing: 0.4,
   },
 });

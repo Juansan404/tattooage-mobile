@@ -12,6 +12,7 @@ import {
   Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { solicitudesService } from '../../services/solicitudes.service';
 import { mensajesService } from '../../services/mensajes.service';
@@ -116,7 +117,7 @@ export default function DetalleSolicitudScreen() {
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backText}>‹ Volver</Text>
+            <Ionicons name="chevron-back" size={26} color={Colors.text} />
           </TouchableOpacity>
           <View style={[styles.estadoBadge, { backgroundColor: ESTADO_COLORS[solicitud.estado] + '22' }]}>
             <Text style={[styles.estadoText, { color: ESTADO_COLORS[solicitud.estado] }]}>
@@ -214,7 +215,7 @@ export default function DetalleSolicitudScreen() {
               {enviando ? (
                 <ActivityIndicator size="small" color={Colors.white} />
               ) : (
-                <Text style={styles.sendText}>›</Text>
+                <Ionicons name="send" size={18} color={Colors.white} />
               )}
             </TouchableOpacity>
           </View>

@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { solicitudesService } from '../../services/solicitudes.service';
 import { useAuthStore } from '../../store/auth.store';
@@ -66,7 +67,7 @@ export default function NuevaSolicitudScreen() {
       >
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
-            <Text style={styles.backText}>‹ Volver</Text>
+            <Ionicons name="chevron-back" size={26} color={Colors.text} />
           </TouchableOpacity>
           <Text style={styles.title}>Nueva solicitud</Text>
           <View style={{ width: 60 }} />

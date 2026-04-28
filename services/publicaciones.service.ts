@@ -26,8 +26,14 @@ export const publicacionesService = {
     await api.delete(`/publicaciones/${id}`);
   },
 
-  async toggleLike(id: number): Promise<void> {
-    await api.post(`/publicaciones/${id}/like`);
+  async toggleLike(idPublicacion: number, idUsuario: number): Promise<{ liked: boolean; likesCount: number }> {
+    const response = await api.post(`/publicaciones/${idPublicacion}/like`, { idUsuario });
+    return response.data;
+  },
+
+  async getLikeStatus(idPublicacion: number, idUsuario: number): Promise<{ liked: boolean; likesCount: number }> {
+    const response = await api.get(`/publicaciones/${idPublicacion}/like/${idUsuario}`);
+    return response.data;
   },
 
   async getComentarios(id: number): Promise<Comentario[]> {

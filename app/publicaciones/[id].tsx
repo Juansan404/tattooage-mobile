@@ -33,6 +33,9 @@ export default function DetallePublicacionScreen() {
   const [nuevoComentario, setNuevoComentario] = useState('');
   const [loading, setLoading] = useState(true);
   const [enviando, setEnviando] = useState(false);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+  const [likeLoading, setLikeLoading] = useState(false);
 
   useEffect(() => {
     const cargar = async () => {
@@ -43,6 +46,13 @@ export default function DetallePublicacionScreen() {
         ]);
         setPublicacion(pub);
         setComentarios(coms);
+        if (idUsuario) {
+          const { liked: l, likesCount: c } = await publicacionesService.getLikeStatus(Number(id), idUsuario);
+          setLiked(l);
+          setLikeCount(c);
+        } else {
+          setLikeCount(pub.likesCount ?? 0);
+        }
       } catch {
         Alert.alert('Error', 'No se pudo cargar la publicación.');
         router.back();
@@ -52,6 +62,24 @@ export default function DetallePublicacionScreen() {
     };
     cargar();
   }, [id]);
+
+  const handleLike = async () => {
+    if (!idUsuario || likeLoading) return;
+    setLikeLoading(true);
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikeCount((prev) => wasLiked ? prev - 1 : prev + 1);
+    try {
+      const { liked: l, likesCount: c } = await publicacionesService.toggleLike(Number(id), idUsuario);
+      setLiked(l);
+      setLikeCount(c);
+    } catch {
+      setLiked(wasLiked);
+      setLikeCount((prev) => wasLiked ? prev + 1 : prev - 1);
+    } finally {
+      setLikeLoading(false);
+    }
+  };
 
   const handleComentar = async () => {
     if (!nuevoComentario.trim() || !idUsuario) return;
@@ -95,10 +123,14 @@ export default function DetallePublicacionScreen() {
           {/* Info */}
           <View style={styles.info}>
             <View style={styles.likeRow}>
-              <View style={styles.actionBtn}>
-                <Text style={styles.actionIcon}>🤍</Text>
-                <Text style={styles.actionCount}>{publicacion.likesCount ?? 0}</Text>
-              </View>
+              <TouchableOpacity style={styles.actionBtn} onPress={handleLike} disabled={likeLoading}>
+                <Ionicons
+                  name={liked ? 'heart' : 'heart-outline'}
+                  size={26}
+                  color={liked ? Colors.primary : Colors.text}
+                />
+                <Text style={styles.actionCount}>{likeCount}</Text>
+              </TouchableOpacity>
             </View>
 
             {publicacion.descripcion && (

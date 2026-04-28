@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,6 +11,8 @@ import {
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Publicacion } from '../../types/publicacion.types';
+import { publicacionesService } from '../../services/publicaciones.service';
+import { useAuthStore } from '../../store/auth.store';
 import { Colors } from '../../constants/colors';
 
 interface Props {
@@ -36,25 +38,48 @@ function timeAgo(dateStr: string): string {
 
 export default function PostCard({ publicacion, onLike }: Props) {
   const router = useRouter();
+  const { idUsuario } = useAuthStore();
   const [avatarError, setAvatarError] = useState(false);
   const [imageError, setImageError] = useState(false);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(publicacion.likesCount ?? 0);
+  const [likeLoading, setLikeLoading] = useState(false);
 
   const { idPublicacion, fotoUrl, descripcion, estilo, zonaCuerpo, creadoEn, usuario } = publicacion;
 
-  const handleLike = () => {
-    setLiked((prev) => !prev);
-    setLikeCount((prev) => (liked ? prev - 1 : prev + 1));
-    onLike?.(idPublicacion);
+  useEffect(() => {
+    if (!idUsuario) return;
+    publicacionesService.getLikeStatus(idPublicacion, idUsuario)
+      .then(({ liked: l, likesCount: c }) => {
+        setLiked(l);
+        setLikeCount(c);
+      })
+      .catch(() => {});
+  }, [idPublicacion, idUsuario]);
+
+  const handleLike = async () => {
+    if (!idUsuario || likeLoading) return;
+    setLikeLoading(true);
+    // Optimistic update
+    const wasLiked = liked;
+    setLiked(!wasLiked);
+    setLikeCount((prev) => wasLiked ? prev - 1 : prev + 1);
+    try {
+      const { liked: l, likesCount: c } = await publicacionesService.toggleLike(idPublicacion, idUsuario);
+      setLiked(l);
+      setLikeCount(c);
+      onLike?.(idPublicacion);
+    } catch {
+      // Revert on error
+      setLiked(wasLiked);
+      setLikeCount((prev) => wasLiked ? prev + 1 : prev - 1);
+    } finally {
+      setLikeLoading(false);
+    }
   };
 
   const handleDoubleTap = () => {
-    if (!liked) {
-      setLiked(true);
-      setLikeCount((prev) => prev + 1);
-      onLike?.(idPublicacion);
-    }
+    if (!liked) handleLike();
   };
 
   return (

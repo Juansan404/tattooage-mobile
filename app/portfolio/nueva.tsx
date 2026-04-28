@@ -13,6 +13,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { publicacionesService } from '../../services/publicaciones.service';
@@ -23,22 +24,45 @@ const ESTILOS = ['blackwork', 'realismo', 'tradicional', 'neo-tradicional', 'acu
 export default function NuevaPublicacionScreen() {
   const router = useRouter();
 
-  const [imagenUrl, setImagenUrl] = useState('');
+  const [imagenUri, setImagenUri] = useState('');
+  const [imagenBase64, setImagenBase64] = useState('');
   const [descripcion, setDescripcion] = useState('');
   const [estilo, setEstilo] = useState('');
   const [zonaCuerpo, setZonaCuerpo] = useState('');
   const [loading, setLoading] = useState(false);
 
+  const seleccionarImagen = async () => {
+    const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permiso.granted) {
+      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu galería para subir fotos.');
+      return;
+    }
+
+    const resultado = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+      base64: true,
+    });
+
+    if (!resultado.canceled && resultado.assets[0]) {
+      const asset = resultado.assets[0];
+      setImagenUri(asset.uri);
+      setImagenBase64(`data:image/jpeg;base64,${asset.base64}`);
+    }
+  };
+
   const handlePublicar = async () => {
-    if (!imagenUrl.trim()) {
-      Alert.alert('Error', 'La URL de la imagen es obligatoria.');
+    if (!imagenBase64) {
+      Alert.alert('Error', 'Selecciona una imagen antes de publicar.');
       return;
     }
 
     try {
       setLoading(true);
       await publicacionesService.crear({
-        fotoUrl: imagenUrl.trim(),
+        fotoUrl: imagenBase64,
         descripcion: descripcion.trim() || undefined,
         estilo: estilo.trim() || undefined,
         zonaCuerpo: zonaCuerpo.trim() || undefined,
@@ -74,25 +98,24 @@ export default function NuevaPublicacionScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-          {/* Preview de imagen */}
-          {imagenUrl.trim() && (
-            <Image
-              source={{ uri: imagenUrl.trim() }}
-              style={styles.preview}
-              resizeMode="cover"
-            />
-          )}
+          {/* Selector de imagen */}
+          <TouchableOpacity style={styles.imagePicker} onPress={seleccionarImagen} activeOpacity={0.8}>
+            {imagenUri ? (
+              <Image source={{ uri: imagenUri }} style={styles.preview} resizeMode="cover" />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Ionicons name="image-outline" size={48} color={Colors.textMuted} />
+                <Text style={styles.imagePlaceholderText}>Toca para seleccionar una foto</Text>
+              </View>
+            )}
+          </TouchableOpacity>
 
-          <Text style={styles.label}>URL de la imagen *</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="https://... (sube antes a Cloudinary u otro servicio)"
-            placeholderTextColor={Colors.textMuted}
-            value={imagenUrl}
-            onChangeText={setImagenUrl}
-            keyboardType="url"
-            autoCapitalize="none"
-          />
+          {imagenUri && (
+            <TouchableOpacity style={styles.changeImageBtn} onPress={seleccionarImagen}>
+              <Ionicons name="swap-horizontal-outline" size={16} color={Colors.primary} />
+              <Text style={styles.changeImageText}>Cambiar imagen</Text>
+            </TouchableOpacity>
+          )}
 
           <Text style={styles.label}>Descripción</Text>
           <TextInput
@@ -131,9 +154,9 @@ export default function NuevaPublicacionScreen() {
           />
 
           <TouchableOpacity
-            style={[styles.submitBtn, loading && styles.submitBtnDisabled]}
+            style={[styles.submitBtn, (!imagenBase64 || loading) && styles.submitBtnDisabled]}
             onPress={handlePublicar}
-            disabled={loading}
+            disabled={!imagenBase64 || loading}
           >
             {loading ? (
               <ActivityIndicator color={Colors.white} />
@@ -158,17 +181,32 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  backText: { color: Colors.textSecondary, fontSize: 15, width: 80 },
   title: { fontSize: 16, fontWeight: '700', color: Colors.text },
-  publishText: { color: Colors.primary, fontSize: 15, fontWeight: '700', width: 80, textAlign: 'right' },
+  publishText: { color: Colors.primary, fontSize: 15, fontWeight: '700', width: 70, textAlign: 'right' },
   form: { padding: 16, gap: 6 },
-  preview: {
+  imagePicker: { borderRadius: 12, overflow: 'hidden' },
+  preview: { width: '100%', height: 300, borderRadius: 12, backgroundColor: Colors.surface },
+  imagePlaceholder: {
     width: '100%',
     height: 240,
     borderRadius: 12,
     backgroundColor: Colors.surface,
-    marginBottom: 8,
+    borderWidth: 2,
+    borderColor: Colors.border,
+    borderStyle: 'dashed',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 10,
   },
+  imagePlaceholderText: { color: Colors.textMuted, fontSize: 14 },
+  changeImageBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    paddingVertical: 8,
+  },
+  changeImageText: { color: Colors.primary, fontSize: 14, fontWeight: '600' },
   label: {
     fontSize: 12,
     color: Colors.textSecondary,
@@ -209,6 +247,6 @@ const styles = StyleSheet.create({
     marginTop: 24,
     marginBottom: 16,
   },
-  submitBtnDisabled: { opacity: 0.6 },
+  submitBtnDisabled: { opacity: 0.4 },
   submitBtnText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
 });

@@ -14,6 +14,8 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '../../services/api';
 import { useAuthStore } from '../../store/auth.store';
 import { Usuario } from '../../types/usuario.types';
@@ -30,6 +32,24 @@ export default function EditarPerfilScreen() {
   const [telefono, setTelefono] = useState('');
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
+
+  const seleccionarAvatar = async () => {
+    const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permiso.granted) {
+      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu galería.');
+      return;
+    }
+    const resultado = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.6,
+      base64: true,
+    });
+    if (!resultado.canceled && resultado.assets[0]?.base64) {
+      setAvatar(`data:image/jpeg;base64,${resultado.assets[0].base64}`);
+    }
+  };
 
   useEffect(() => {
     const cargar = async () => {
@@ -105,17 +125,26 @@ export default function EditarPerfilScreen() {
 
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
           {/* Preview avatar */}
-          <View style={styles.avatarSection}>
+          <TouchableOpacity style={styles.avatarSection} onPress={seleccionarAvatar} activeOpacity={0.8}>
             {avatar.trim() ? (
-              <Image source={{ uri: avatar.trim() }} style={styles.avatarPreview} />
+              <View>
+                <Image source={{ uri: avatar.trim() }} style={styles.avatarPreview} />
+                <View style={styles.avatarEditBadge}>
+                  <Ionicons name="camera" size={14} color={Colors.white} />
+                </View>
+              </View>
             ) : (
               <View style={styles.avatarPlaceholder}>
                 <Text style={styles.avatarInitial}>
                   {nombre.charAt(0).toUpperCase() || '?'}
                 </Text>
+                <View style={styles.avatarEditBadge}>
+                  <Ionicons name="camera" size={14} color={Colors.white} />
+                </View>
               </View>
             )}
-          </View>
+            <Text style={styles.avatarHint}>Toca para cambiar foto</Text>
+          </TouchableOpacity>
 
           <Text style={styles.label}>Nombre *</Text>
           <TextInput
@@ -147,17 +176,6 @@ export default function EditarPerfilScreen() {
             multiline
             numberOfLines={3}
             textAlignVertical="top"
-          />
-
-          <Text style={styles.label}>URL de avatar</Text>
-          <TextInput
-            style={styles.input}
-            placeholder="https://..."
-            placeholderTextColor={Colors.textMuted}
-            value={avatar}
-            onChangeText={setAvatar}
-            keyboardType="url"
-            autoCapitalize="none"
           />
 
           <Text style={styles.label}>Teléfono</Text>
@@ -203,7 +221,7 @@ const styles = StyleSheet.create({
   title: { fontSize: 16, fontWeight: '700', color: Colors.text },
   saveText: { color: Colors.primary, fontSize: 15, fontWeight: '700', width: 70, textAlign: 'right' },
   form: { padding: 20, gap: 6 },
-  avatarSection: { alignItems: 'center', marginBottom: 8 },
+  avatarSection: { alignItems: 'center', marginBottom: 8, gap: 8 },
   avatarPreview: {
     width: 90,
     height: 90,
@@ -221,7 +239,21 @@ const styles = StyleSheet.create({
     borderWidth: 2,
     borderColor: Colors.primary,
   },
+  avatarEditBadge: {
+    position: 'absolute',
+    bottom: 0,
+    right: 0,
+    backgroundColor: Colors.primary,
+    borderRadius: 12,
+    width: 24,
+    height: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderWidth: 2,
+    borderColor: Colors.background,
+  },
   avatarInitial: { fontSize: 34, fontWeight: '700', color: Colors.primary },
+  avatarHint: { fontSize: 12, color: Colors.textMuted },
   label: {
     fontSize: 12,
     color: Colors.textSecondary,

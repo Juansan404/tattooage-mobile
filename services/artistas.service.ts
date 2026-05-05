@@ -41,4 +41,9 @@ export const artistasService = {
     const res = await api.get(`/usuarios/${idUsuario}/contadores`);
     return res.data;
   },
+
+  async buscarUsuarios(nombre: string): Promise<Usuario[]> {
+    const res = await api.get<Usuario[]>(`/usuarios/buscar?nombre=${encodeURIComponent(nombre)}`);
+    return res.data;
+  },
 };

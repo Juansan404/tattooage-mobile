@@ -88,7 +88,7 @@ export default function PostCard({ publicacion, onLike }: Props) {
       <View style={styles.header}>
         <TouchableOpacity
           style={styles.authorRow}
-          onPress={() => usuario && router.push(`/artistas/${usuario.idUsuario}`)}
+          onPress={() => usuario && router.push(`/usuarios/${usuario.idUsuario}`)}
           activeOpacity={0.7}
         >
           {usuario?.avatar && !avatarError ? (

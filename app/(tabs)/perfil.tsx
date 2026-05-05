@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '../../services/api';
+import { artistasService } from '../../services/artistas.service';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { Usuario } from '../../types/usuario.types';
 import { Publicacion } from '../../types/publicacion.types';
@@ -39,19 +40,23 @@ export default function PerfilScreen() {
 
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([]);
+  const [seguidores, setSeguidores] = useState(0);
+  const [seguidos, setSeguidos] = useState(0);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'grid' | 'tagged'>('grid');
 
   const cargar = useCallback(async () => {
     if (!idUsuario) return;
     try {
-      const [userRes, allPubs] = await Promise.all([
+      const [userRes, allPubs, contadores] = await Promise.all([
         api.get<Usuario>(`/usuarios/${idUsuario}`),
         publicacionesService.getFeed(),
+        artistasService.getContadores(idUsuario),
       ]);
       setUsuario(userRes.data);
-      // Filtrar publicaciones del usuario actual
       setPublicaciones(allPubs.filter((p) => p.usuario?.idUsuario === idUsuario));
+      setSeguidores(contadores.seguidores);
+      setSeguidos(contadores.seguidos);
     } catch {
       // silencioso
     } finally {
@@ -107,11 +112,11 @@ export default function PerfilScreen() {
               <Text style={styles.statLabel}>publicaciones</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>—</Text>
+              <Text style={styles.statNumber}>{seguidores}</Text>
               <Text style={styles.statLabel}>seguidores</Text>
             </View>
             <View style={styles.statItem}>
-              <Text style={styles.statNumber}>—</Text>
+              <Text style={styles.statNumber}>{seguidos}</Text>
               <Text style={styles.statLabel}>seguidos</Text>
             </View>
           </View>

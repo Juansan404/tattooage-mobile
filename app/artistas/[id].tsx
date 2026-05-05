@@ -32,6 +32,9 @@ export default function PerfilArtistaScreen() {
   const [portfolio, setPortfolio] = useState<Publicacion[]>([]);
   const [loading, setLoading] = useState(true);
   const [siguiendo, setSiguiendo] = useState(false);
+  const [seguidores, setSeguidores] = useState(0);
+  const [seguidos, setSeguidos] = useState(0);
+  const [followLoading, setFollowLoading] = useState(false);
 
   const esMiPerfil = idUsuario === Number(id);
 
@@ -46,6 +49,17 @@ export default function PerfilArtistaScreen() {
         setUsuario(u);
         setPerfil(p);
         setPortfolio(port);
+
+        if (idUsuario && idUsuario !== Number(id)) {
+          const estado = await artistasService.getEstadoSeguir(Number(id), idUsuario);
+          setSiguiendo(estado.siguiendo);
+          setSeguidores(estado.seguidores);
+          setSeguidos(estado.seguidos);
+        } else {
+          const contadores = await artistasService.getContadores(Number(id));
+          setSeguidores(contadores.seguidores);
+          setSeguidos(contadores.seguidos);
+        }
       } catch {
         Alert.alert('Error', 'No se pudo cargar el perfil.');
         router.back();
@@ -57,15 +71,21 @@ export default function PerfilArtistaScreen() {
   }, [id]);
 
   const handleSeguir = async () => {
+    if (!idUsuario || followLoading) return;
+    setFollowLoading(true);
+    const wasSiguiendo = siguiendo;
+    setSiguiendo(!wasSiguiendo);
+    setSeguidores((prev) => wasSiguiendo ? prev - 1 : prev + 1);
     try {
-      if (siguiendo) {
-        await artistasService.dejarDeSeguir(Number(id));
-      } else {
-        await artistasService.seguir(Number(id));
-      }
-      setSiguiendo(!siguiendo);
+      const { siguiendo: s, seguidores: c } = await artistasService.toggleSeguir(Number(id), idUsuario);
+      setSiguiendo(s);
+      setSeguidores(c);
     } catch {
+      setSiguiendo(wasSiguiendo);
+      setSeguidores((prev) => wasSiguiendo ? prev + 1 : prev - 1);
       Alert.alert('Error', 'No se pudo completar la acción.');
+    } finally {
+      setFollowLoading(false);
     }
   };
 
@@ -104,6 +124,22 @@ export default function PerfilArtistaScreen() {
           )}
 
           <Text style={styles.nombre}>{usuario.nombre} {usuario.apellidos}</Text>
+
+          <View style={styles.statsRow}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{portfolio.length}</Text>
+              <Text style={styles.statLabel}>publicaciones</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{seguidores}</Text>
+              <Text style={styles.statLabel}>seguidores</Text>
+            </View>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{seguidos}</Text>
+              <Text style={styles.statLabel}>seguidos</Text>
+            </View>
+          </View>
+
           {usuario.bio && (
             <Text style={styles.bio}>{usuario.bio}</Text>
           )}
@@ -215,6 +251,10 @@ const styles = StyleSheet.create({
   },
   avatarInitial: { fontSize: 36, fontWeight: '700', color: Colors.primary },
   nombre: { fontSize: 22, fontWeight: '700', color: Colors.text },
+  statsRow: { flexDirection: 'row', gap: 28, marginTop: 4 },
+  statItem: { alignItems: 'center', gap: 2 },
+  statNumber: { fontSize: 17, fontWeight: '800', color: Colors.text },
+  statLabel: { fontSize: 11, color: Colors.textSecondary },
   bio: { fontSize: 14, color: Colors.textSecondary, textAlign: 'center', lineHeight: 20 },
   especialidades: { fontSize: 13, color: Colors.primary, textAlign: 'center', fontStyle: 'italic' },
   badgeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center', marginTop: 4 },

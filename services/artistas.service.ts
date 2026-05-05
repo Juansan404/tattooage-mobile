@@ -27,11 +27,18 @@ export const artistasService = {
     return response.data.filter((p) => p.usuario?.idUsuario === idUsuario);
   },
 
-  async seguir(idUsuario: number): Promise<void> {
-    await api.post(`/usuarios/${idUsuario}/seguir`);
+  async toggleSeguir(idSeguido: number, idSeguidor: number): Promise<{ siguiendo: boolean; seguidores: number }> {
+    const res = await api.post(`/usuarios/${idSeguido}/seguir`, { idUsuario: idSeguidor });
+    return res.data;
   },
 
-  async dejarDeSeguir(idUsuario: number): Promise<void> {
-    await api.delete(`/usuarios/${idUsuario}/seguir`);
+  async getEstadoSeguir(idSeguido: number, idSeguidor: number): Promise<{ siguiendo: boolean; seguidores: number; seguidos: number }> {
+    const res = await api.get(`/usuarios/${idSeguido}/seguir/${idSeguidor}`);
+    return res.data;
+  },
+
+  async getContadores(idUsuario: number): Promise<{ seguidores: number; seguidos: number }> {
+    const res = await api.get(`/usuarios/${idUsuario}/contadores`);
+    return res.data;
   },
 };

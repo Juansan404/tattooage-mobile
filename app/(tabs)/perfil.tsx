@@ -201,6 +201,7 @@ export default function PerfilScreen() {
 
       {activeTab === 'grid' ? (
         <FlatList
+          key="grid"
           data={publicaciones}
           keyExtractor={(item) => String(item.idPublicacion)}
           numColumns={3}
@@ -242,6 +243,7 @@ export default function PerfilScreen() {
         />
       ) : (
         <FlatList
+          key="tagged"
           data={[]}
           ListHeaderComponent={<ListHeader />}
           renderItem={() => null}

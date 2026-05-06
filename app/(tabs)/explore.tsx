@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -23,6 +23,9 @@ import { Colors } from '../../constants/colors';
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GAP = 2;
 const TILE_SIZE = (SCREEN_WIDTH - GAP * 2) / 3;
+const PAGE_SIZE = 15;
+
+const ESTILOS = ['Blackwork', 'Realismo', 'Tradicional', 'Neo-Tradicional', 'Japonés', 'Geométrico', 'Acuarela', 'Minimalista', 'Old School', 'Tribal'];
 
 function buildRows(items: Publicacion[]) {
   const rows: { type: 'trio' | 'mosaic'; items: Publicacion[] }[] = [];
@@ -50,47 +53,78 @@ export default function ExploreScreen() {
   const [filtradas, setFiltradas] = useState<Publicacion[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
   const [busqueda, setBusqueda] = useState('');
+  const [estiloActivo, setEstiloActivo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [searchingUsers, setSearchingUsers] = useState(false);
 
-  const cargar = useCallback(async () => {
+  const nextPage = useRef(0);
+  const fetching = useRef(false);
+
+  const cargarPagina = useCallback(async (reset: boolean) => {
+    if (fetching.current) return;
+    fetching.current = true;
+
+    const page = reset ? 0 : nextPage.current;
+
     try {
-      const data = await publicacionesService.getFeed();
-      setTodas(data);
-      setFiltradas(data);
+      const data = await publicacionesService.getFeedPage(page, PAGE_SIZE);
+      const content: Publicacion[] = Array.isArray(data)
+        ? (data as unknown as Publicacion[])
+        : (data.content ?? []);
+      const isLast: boolean = Array.isArray(data) ? true : (data.last ?? true);
+      setTodas(prev => reset ? content : [...prev, ...content]);
+      setHasMore(!isLast);
+      nextPage.current = page + 1;
     } catch {
       // silencioso
     } finally {
       setLoading(false);
+      setLoadingMore(false);
+      fetching.current = false;
     }
   }, []);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => { cargarPagina(true); }, [cargarPagina]);
 
   useEffect(() => {
     const term = busqueda.trim();
-    if (!term) {
+    if (!term && !estiloActivo) {
       setFiltradas(todas);
       setUsuarios([]);
       return;
     }
     const t = term.toLowerCase();
     setFiltradas(
-      todas.filter(
-        (p) =>
-          p.estilo?.toLowerCase().includes(t) ||
-          p.zonaCuerpo?.toLowerCase().includes(t) ||
-          p.descripcion?.toLowerCase().includes(t) ||
-          p.usuario?.nombre?.toLowerCase().includes(t)
-      )
+      todas.filter((p) => {
+        const matchEstilo = estiloActivo ? p.estilo?.toLowerCase() === estiloActivo.toLowerCase() : true;
+        const matchBusqueda = t
+          ? p.estilo?.toLowerCase().includes(t) ||
+            p.zonaCuerpo?.toLowerCase().includes(t) ||
+            p.descripcion?.toLowerCase().includes(t) ||
+            p.usuario?.nombre?.toLowerCase().includes(t)
+          : true;
+        return matchEstilo && matchBusqueda;
+      })
     );
 
-    setSearchingUsers(true);
-    artistasService.buscarUsuarios(term)
-      .then(setUsuarios)
-      .catch(() => setUsuarios([]))
-      .finally(() => setSearchingUsers(false));
-  }, [busqueda, todas]);
+    if (term) {
+      setSearchingUsers(true);
+      artistasService.buscarUsuarios(term)
+        .then(setUsuarios)
+        .catch(() => setUsuarios([]))
+        .finally(() => setSearchingUsers(false));
+    } else {
+      setUsuarios([]);
+    }
+  }, [busqueda, estiloActivo, todas]);
+
+  const onEndReached = () => {
+    if (!hasMore || loadingMore || loading) return;
+    setLoadingMore(true);
+    cargarPagina(false);
+  };
 
   const rows = buildRows(filtradas);
 
@@ -155,6 +189,28 @@ export default function ExploreScreen() {
         )}
       </View>
 
+      {/* Chips de estilos */}
+      <ScrollView
+        horizontal
+        showsHorizontalScrollIndicator={false}
+        contentContainerStyle={styles.chipsScroll}
+        style={styles.chipsContainer}
+      >
+        {ESTILOS.map((estilo) => {
+          const activo = estiloActivo === estilo;
+          return (
+            <TouchableOpacity
+              key={estilo}
+              style={[styles.chip, activo && styles.chipActivo]}
+              onPress={() => setEstiloActivo(activo ? null : estilo)}
+              activeOpacity={0.7}
+            >
+              <Text style={[styles.chipText, activo && styles.chipTextActivo]}>{estilo}</Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+
       {loading ? (
         <View style={styles.center}>
           <ActivityIndicator size="large" color={Colors.primary} />
@@ -165,6 +221,8 @@ export default function ExploreScreen() {
           keyExtractor={(_, i) => String(i)}
           renderItem={renderRow}
           ItemSeparatorComponent={() => <View style={{ height: GAP }} />}
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.4}
           ListHeaderComponent={
             busqueda.trim() ? (
               <View style={styles.usersSection}>
@@ -201,6 +259,15 @@ export default function ExploreScreen() {
                   <Text style={styles.usersTitle}>Publicaciones</Text>
                 )}
               </View>
+            ) : null
+          }
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={Colors.primary} />
+              </View>
+            ) : !hasMore && todas.length > 0 && !busqueda.trim() ? (
+              <Text style={styles.footerEnd}>— Ya lo has visto todo —</Text>
             ) : null
           }
           ListEmptyComponent={
@@ -266,10 +333,52 @@ const styles = StyleSheet.create({
   userAvatarInitial: { fontSize: 22, fontWeight: '700', color: Colors.primary },
   userName: { fontSize: 12, fontWeight: '600', color: Colors.text, textAlign: 'center' },
   userRol: { fontSize: 10, color: Colors.textMuted, textAlign: 'center' },
+  /* Chips de estilos */
+  chipsContainer: {
+    maxHeight: 44,
+    borderBottomWidth: 0.5,
+    borderBottomColor: Colors.border,
+  },
+  chipsScroll: {
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    gap: 8,
+    alignItems: 'center',
+  },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 5,
+    borderRadius: 20,
+    backgroundColor: Colors.surface,
+    borderWidth: 0.5,
+    borderColor: Colors.border,
+  },
+  chipActivo: {
+    backgroundColor: Colors.primary,
+    borderColor: Colors.primary,
+  },
+  chipText: {
+    fontSize: 12,
+    color: Colors.textSecondary,
+    fontWeight: '500',
+  },
+  chipTextActivo: {
+    color: Colors.white,
+    fontWeight: '700',
+  },
   /* Grid rows */
   trioRow: { flexDirection: 'row', gap: GAP },
   mosaicRow: { flexDirection: 'row', gap: GAP },
   mosaicStack: { flexDirection: 'column', gap: GAP },
+  /* Footer */
+  footerLoader: { paddingVertical: 20, alignItems: 'center' },
+  footerEnd: {
+    textAlign: 'center',
+    color: Colors.textMuted,
+    fontSize: 12,
+    paddingVertical: 20,
+    letterSpacing: 0.5,
+  },
   /* Empty */
   center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   emptyFlex: { flexGrow: 1 },

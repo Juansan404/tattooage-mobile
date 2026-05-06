@@ -9,7 +9,6 @@ import {
   FlatList,
   Dimensions,
   ActivityIndicator,
-  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
@@ -26,14 +25,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 2;
 const GRID_TILE = (SCREEN_WIDTH - GRID_GAP * 2) / 3;
 
-// Highlights de ejemplo (decorativo)
-const HIGHLIGHTS = [
-  { id: '1', label: 'Blackwork', emoji: '🖤' },
-  { id: '2', label: 'Realismo', emoji: '🎨' },
-  { id: '3', label: 'Japonés', emoji: '🐉' },
-  { id: '4', label: 'Flash', emoji: '⚡' },
-];
-
 export default function PerfilScreen() {
   const router = useRouter();
   const { idUsuario, rol, logout } = useAuthStore();
@@ -43,7 +34,6 @@ export default function PerfilScreen() {
   const [seguidores, setSeguidores] = useState(0);
   const [seguidos, setSeguidos] = useState(0);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'grid' | 'tagged'>('grid');
 
   const cargar = useCallback(async () => {
     if (!idUsuario) return;
@@ -152,38 +142,7 @@ export default function PerfilScreen() {
         </View>
       </View>
 
-      {/* ── Highlights (decorativo) ── */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.highlightsScroll}
-        style={styles.highlightsContainer}
-      >
-        {HIGHLIGHTS.map((h) => (
-          <TouchableOpacity key={h.id} style={styles.highlightItem} activeOpacity={0.8}>
-            <View style={styles.highlightRing}>
-              <Text style={styles.highlightEmoji}>{h.emoji}</Text>
-            </View>
-            <Text style={styles.highlightLabel}>{h.label}</Text>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
-
-      {/* ── Tabs ── */}
-      <View style={styles.tabs}>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'grid' && styles.tabActive]}
-          onPress={() => setActiveTab('grid')}
-        >
-          <Ionicons name="grid-outline" size={22} color={activeTab === 'grid' ? Colors.text : Colors.textMuted} />
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, activeTab === 'tagged' && styles.tabActive]}
-          onPress={() => setActiveTab('tagged')}
-        >
-          <Ionicons name="person-outline" size={22} color={activeTab === 'tagged' ? Colors.text : Colors.textMuted} />
-        </TouchableOpacity>
-      </View>
+      <View style={styles.divider} />
     </View>
   );
 
@@ -199,9 +158,7 @@ export default function PerfilScreen() {
         </TouchableOpacity>
       </View>
 
-      {activeTab === 'grid' ? (
-        <FlatList
-          key="grid"
+      <FlatList
           data={publicaciones}
           keyExtractor={(item) => String(item.idPublicacion)}
           numColumns={3}
@@ -241,22 +198,6 @@ export default function PerfilScreen() {
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={{ height: GRID_GAP }} />}
         />
-      ) : (
-        <FlatList
-          key="tagged"
-          data={[]}
-          ListHeaderComponent={<ListHeader />}
-          renderItem={() => null}
-          ListEmptyComponent={
-            <View style={styles.emptyGrid}>
-              <Ionicons name="pricetag-outline" size={56} color={Colors.textMuted} />
-              <Text style={styles.emptyGridTitle}>Sin etiquetas</Text>
-              <Text style={styles.emptyGridSub}>Las fotos en las que te etiqueten aparecerán aquí.</Text>
-            </View>
-          }
-          showsVerticalScrollIndicator={false}
-        />
-      )}
     </SafeAreaView>
   );
 }
@@ -397,61 +338,9 @@ const styles = StyleSheet.create({
     fontSize: 13,
   },
 
-  /* Highlights */
-  highlightsContainer: {
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.border,
-    paddingBottom: 14,
-  },
-  highlightsScroll: {
-    paddingHorizontal: 16,
-    gap: 18,
-  },
-  highlightItem: {
-    alignItems: 'center',
-    gap: 6,
-    width: 64,
-  },
-  highlightRing: {
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    backgroundColor: Colors.surfaceLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 1.5,
-    borderColor: Colors.border,
-  },
-  highlightEmoji: { fontSize: 26 },
-  highlightLabel: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-  },
-
-  /* Tabs */
-  tabs: {
-    flexDirection: 'row',
-    borderTopWidth: 0.5,
-    borderTopColor: Colors.border,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.border,
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 12,
-    alignItems: 'center',
-  },
-  tabActive: {
-    borderBottomWidth: 1.5,
-    borderBottomColor: Colors.text,
-  },
-  tabIcon: {
-    fontSize: 20,
-    color: Colors.textMuted,
-  },
-  tabIconActive: {
-    color: Colors.text,
+  divider: {
+    height: 0.5,
+    backgroundColor: Colors.border,
   },
 
   /* Grid */
@@ -471,7 +360,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 32,
     gap: 10,
   },
-  emptyGridIcon: { fontSize: 48 },
   emptyGridTitle: {
     fontSize: 18,
     fontWeight: '700',

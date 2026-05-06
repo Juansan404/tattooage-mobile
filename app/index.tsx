@@ -1,15 +1,16 @@
 import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useRootNavigationState } from 'expo-router';
 import { useAuthStore } from '../store/auth.store';
 import { Colors } from '../constants/colors';
 
-// Pantalla de splash/redirect: redirige al feed o al login según sesión
 export default function Index() {
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
+  const rootNavState = useRootNavigationState();
 
   useEffect(() => {
+    if (!rootNavState?.key) return; // layout aún no montado
     if (!isLoading) {
       if (isAuthenticated) {
         router.replace('/(tabs)/feed');
@@ -17,7 +18,7 @@ export default function Index() {
         router.replace('/(auth)/login');
       }
     }
-  }, [isLoading, isAuthenticated]);
+  }, [rootNavState?.key, isLoading, isAuthenticated]);
 
   return (
     <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: Colors.background }}>

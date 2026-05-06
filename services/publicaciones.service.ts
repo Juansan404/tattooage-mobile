@@ -1,9 +1,16 @@
 import api from './api';
-import { Publicacion, Comentario, CrearPublicacionRequest } from '../types/publicacion.types';
+import { Publicacion, Comentario, CrearPublicacionRequest, PageResponse } from '../types/publicacion.types';
 
 export const publicacionesService = {
   async getFeed(): Promise<Publicacion[]> {
     const response = await api.get<Publicacion[]>('/publicaciones');
+    return response.data;
+  },
+
+  async getFeedPage(page: number, size = 15): Promise<PageResponse<Publicacion>> {
+    const response = await api.get<PageResponse<Publicacion>>(
+      `/publicaciones?page=${page}&size=${size}`
+    );
     return response.data;
   },
 

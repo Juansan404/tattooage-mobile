@@ -1,4 +1,5 @@
 import { Usuario } from './usuario.types';
+import { Estilo } from './estilo.types';
 
 export interface Publicacion {
   idPublicacion: number;
@@ -6,6 +7,7 @@ export interface Publicacion {
   fotoUrl: string;
   descripcion?: string;
   estilo?: string;
+  estilos?: Estilo[];
   zonaCuerpo?: string;
   likesCount?: number;
   creadoEn: string;
@@ -28,8 +30,9 @@ export interface PageResponse<T> {
 }
 
 export interface CrearPublicacionRequest {
+  usuario?: { idUsuario: number };
   fotoUrl: string;
   descripcion?: string;
-  estilo?: string;
+  estilos?: string[];
   zonaCuerpo?: string;
 }

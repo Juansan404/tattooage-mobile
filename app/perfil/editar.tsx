@@ -17,13 +17,15 @@ import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '../../services/api';
+import { estilosService } from '../../services/estilos.service';
 import { useAuthStore } from '../../store/auth.store';
 import { Usuario } from '../../types/usuario.types';
+import { Estilo } from '../../types/estilo.types';
 import { Colors } from '../../constants/colors';
 
 export default function EditarPerfilScreen() {
   const router = useRouter();
-  const { idUsuario } = useAuthStore();
+  const { idUsuario, rol } = useAuthStore();
 
   const [nombre, setNombre] = useState('');
   const [apellidos, setApellidos] = useState('');
@@ -32,6 +34,10 @@ export default function EditarPerfilScreen() {
   const [telefono, setTelefono] = useState('');
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
+
+  const [popularStyles, setPopularStyles] = useState<Estilo[]>([]);
+  const [misEstilos, setMisEstilos] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
 
   const seleccionarAvatar = async () => {
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -54,8 +60,16 @@ export default function EditarPerfilScreen() {
   useEffect(() => {
     const cargar = async () => {
       try {
-        const res = await api.get<Usuario>(`/usuarios/${idUsuario}`);
-        const u = res.data;
+        const [userRes] = await Promise.all([
+          api.get<Usuario>(`/usuarios/${idUsuario}`),
+          estilosService.getTop().then(setPopularStyles).catch(() => {}),
+          rol === 'ARTISTA' && idUsuario
+            ? estilosService.getByArtista(idUsuario)
+                .then(list => setMisEstilos(list.map(e => e.nombre)))
+                .catch(() => {})
+            : Promise.resolve(),
+        ]);
+        const u = userRes.data;
         setNombre(u.nombre ?? '');
         setApellidos(u.apellidos ?? '');
         setBio(u.bio ?? '');
@@ -69,7 +83,20 @@ export default function EditarPerfilScreen() {
       }
     };
     cargar();
-  }, [idUsuario]);
+  }, [idUsuario, rol]);
+
+  const toggleEstilo = (nombre: string) => {
+    setMisEstilos(prev =>
+      prev.includes(nombre) ? prev.filter(e => e !== nombre) : [...prev, nombre]
+    );
+  };
+
+  const agregarTag = () => {
+    const tag = tagInput.trim().toLowerCase();
+    if (!tag) return;
+    if (!misEstilos.includes(tag)) setMisEstilos(prev => [...prev, tag]);
+    setTagInput('');
+  };
 
   const handleGuardar = async () => {
     if (!nombre.trim()) {
@@ -78,13 +105,19 @@ export default function EditarPerfilScreen() {
     }
     try {
       setGuardando(true);
-      await api.put(`/usuarios/${idUsuario}`, {
-        nombre: nombre.trim(),
-        apellidos: apellidos.trim() || null,
-        bio: bio.trim() || null,
-        avatar: avatar.trim() || null,
-        telefono: telefono.trim() || null,
-      });
+      const saves: Promise<any>[] = [
+        api.put(`/usuarios/${idUsuario}`, {
+          nombre: nombre.trim(),
+          apellidos: apellidos.trim() || null,
+          bio: bio.trim() || null,
+          avatar: avatar.trim() || null,
+          telefono: telefono.trim() || null,
+        }),
+      ];
+      if (rol === 'ARTISTA' && idUsuario) {
+        saves.push(estilosService.updateArtista(idUsuario, misEstilos));
+      }
+      await Promise.all(saves);
       Alert.alert('¡Guardado!', 'Tu perfil ha sido actualizado.', [
         { text: 'OK', onPress: () => router.back() },
       ]);
@@ -188,6 +221,63 @@ export default function EditarPerfilScreen() {
             keyboardType="phone-pad"
           />
 
+          {rol === 'ARTISTA' && (
+            <>
+              <Text style={styles.label}>Mis estilos</Text>
+              {misEstilos.length > 0 && (
+                <View style={styles.selectedTags}>
+                  {misEstilos.map(tag => (
+                    <TouchableOpacity
+                      key={tag}
+                      style={styles.selectedTag}
+                      onPress={() => toggleEstilo(tag)}
+                      activeOpacity={0.7}
+                    >
+                      <Text style={styles.selectedTagText}>{tag}</Text>
+                      <Ionicons name="close" size={13} color={Colors.white} style={{ marginLeft: 4 }} />
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+              {popularStyles.length > 0 && (
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
+                  {popularStyles.map(e => {
+                    const activo = misEstilos.includes(e.nombre);
+                    return (
+                      <TouchableOpacity
+                        key={e.idEstilo}
+                        style={[styles.chip, activo && styles.chipActivo]}
+                        onPress={() => toggleEstilo(e.nombre)}
+                        activeOpacity={0.7}
+                      >
+                        <Text style={[styles.chipText, activo && styles.chipTextActivo]}>{e.nombre}</Text>
+                      </TouchableOpacity>
+                    );
+                  })}
+                </ScrollView>
+              )}
+              <View style={styles.tagInputRow}>
+                <TextInput
+                  style={styles.tagInput}
+                  placeholder="Añadir estilo personalizado..."
+                  placeholderTextColor={Colors.textMuted}
+                  value={tagInput}
+                  onChangeText={setTagInput}
+                  onSubmitEditing={agregarTag}
+                  returnKeyType="done"
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={[styles.tagAddBtn, !tagInput.trim() && styles.tagAddBtnDisabled]}
+                  onPress={agregarTag}
+                  disabled={!tagInput.trim()}
+                >
+                  <Ionicons name="add" size={20} color={tagInput.trim() ? Colors.white : Colors.textMuted} />
+                </TouchableOpacity>
+              </View>
+            </>
+          )}
+
           <TouchableOpacity
             style={[styles.btn, guardando && styles.btnDisabled]}
             onPress={handleGuardar}
@@ -273,6 +363,49 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   inputMultiline: { minHeight: 80, textAlignVertical: 'top' },
+  selectedTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  selectedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  selectedTagText: { color: Colors.white, fontSize: 13, fontWeight: '600' },
+  chipsRow: { marginBottom: 8 },
+  chip: {
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    marginRight: 8,
+    backgroundColor: Colors.surface,
+  },
+  chipActivo: { backgroundColor: Colors.primary + '33', borderColor: Colors.primary },
+  chipText: { fontSize: 13, color: Colors.textSecondary },
+  chipTextActivo: { color: Colors.primary, fontWeight: '700' },
+  tagInputRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  tagInput: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: Colors.text,
+  },
+  tagAddBtn: {
+    width: 44,
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tagAddBtnDisabled: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   btn: {
     backgroundColor: Colors.primary,
     borderRadius: 12,

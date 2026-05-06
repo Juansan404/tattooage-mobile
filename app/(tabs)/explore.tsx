@@ -16,7 +16,9 @@ import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { artistasService } from '../../services/artistas.service';
+import { estilosService } from '../../services/estilos.service';
 import { Publicacion } from '../../types/publicacion.types';
+import { Estilo } from '../../types/estilo.types';
 import { Usuario } from '../../types/usuario.types';
 import { Colors } from '../../constants/colors';
 
@@ -24,8 +26,6 @@ const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GAP = 2;
 const TILE_SIZE = (SCREEN_WIDTH - GAP * 2) / 3;
 const PAGE_SIZE = 15;
-
-const ESTILOS = ['Blackwork', 'Realismo', 'Tradicional', 'Neo-Tradicional', 'Japonés', 'Geométrico', 'Acuarela', 'Minimalista', 'Old School', 'Tribal'];
 
 function buildRows(items: Publicacion[]) {
   const rows: { type: 'trio' | 'mosaic'; items: Publicacion[] }[] = [];
@@ -52,6 +52,7 @@ export default function ExploreScreen() {
   const [todas, setTodas] = useState<Publicacion[]>([]);
   const [filtradas, setFiltradas] = useState<Publicacion[]>([]);
   const [usuarios, setUsuarios] = useState<Usuario[]>([]);
+  const [estilos, setEstilos] = useState<Estilo[]>([]);
   const [busqueda, setBusqueda] = useState('');
   const [estiloActivo, setEstiloActivo] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -86,7 +87,10 @@ export default function ExploreScreen() {
     }
   }, []);
 
-  useEffect(() => { cargarPagina(true); }, [cargarPagina]);
+  useEffect(() => {
+    cargarPagina(true);
+    estilosService.getTop().then(setEstilos).catch(() => setEstilos([]));
+  }, [cargarPagina]);
 
   useEffect(() => {
     const term = busqueda.trim();
@@ -98,9 +102,13 @@ export default function ExploreScreen() {
     const t = term.toLowerCase();
     setFiltradas(
       todas.filter((p) => {
-        const matchEstilo = estiloActivo ? p.estilo?.toLowerCase() === estiloActivo.toLowerCase() : true;
+        const matchEstilo = estiloActivo
+          ? p.estilos?.some(e => e.nombre.toLowerCase() === estiloActivo.toLowerCase()) ||
+            p.estilo?.toLowerCase() === estiloActivo.toLowerCase()
+          : true;
         const matchBusqueda = t
-          ? p.estilo?.toLowerCase().includes(t) ||
+          ? p.estilos?.some(e => e.nombre.toLowerCase().includes(t)) ||
+            p.estilo?.toLowerCase().includes(t) ||
             p.zonaCuerpo?.toLowerCase().includes(t) ||
             p.descripcion?.toLowerCase().includes(t) ||
             p.usuario?.nombre?.toLowerCase().includes(t)
@@ -196,16 +204,16 @@ export default function ExploreScreen() {
         contentContainerStyle={styles.chipsScroll}
         style={styles.chipsContainer}
       >
-        {ESTILOS.map((estilo) => {
-          const activo = estiloActivo === estilo;
+        {estilos.map((e) => {
+          const activo = estiloActivo === e.nombre;
           return (
             <TouchableOpacity
-              key={estilo}
+              key={e.idEstilo}
               style={[styles.chip, activo && styles.chipActivo]}
-              onPress={() => setEstiloActivo(activo ? null : estilo)}
+              onPress={() => setEstiloActivo(activo ? null : e.nombre)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.chipText, activo && styles.chipTextActivo]}>{estilo}</Text>
+              <Text style={[styles.chipText, activo && styles.chipTextActivo]}>{e.nombre}</Text>
             </TouchableOpacity>
           );
         })}

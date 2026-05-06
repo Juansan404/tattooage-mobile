@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -17,19 +17,50 @@ import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useRouter } from 'expo-router';
 import { publicacionesService } from '../../services/publicaciones.service';
+import { estilosService } from '../../services/estilos.service';
+import { useAuthStore } from '../../store/auth.store';
+import { Estilo } from '../../types/estilo.types';
 import { Colors } from '../../constants/colors';
-
-const ESTILOS = ['blackwork', 'realismo', 'tradicional', 'neo-tradicional', 'acuarela', 'minimalista', 'geométrico', 'japonés', 'tribal', 'otros'];
 
 export default function NuevaPublicacionScreen() {
   const router = useRouter();
+  const { idUsuario } = useAuthStore();
 
   const [imagenUri, setImagenUri] = useState('');
   const [imagenBase64, setImagenBase64] = useState('');
   const [descripcion, setDescripcion] = useState('');
-  const [estilo, setEstilo] = useState('');
   const [zonaCuerpo, setZonaCuerpo] = useState('');
   const [loading, setLoading] = useState(false);
+
+  const [popularStyles, setPopularStyles] = useState<Estilo[]>([]);
+  const [seleccionados, setSeleccionados] = useState<string[]>([]);
+  const [tagInput, setTagInput] = useState('');
+  const tagInputRef = useRef<TextInput>(null);
+
+  useEffect(() => {
+    estilosService.getTop()
+      .then(setPopularStyles)
+      .catch(() => setPopularStyles([]));
+  }, []);
+
+  const toggleEstilo = (nombre: string) => {
+    setSeleccionados(prev =>
+      prev.includes(nombre) ? prev.filter(e => e !== nombre) : [...prev, nombre]
+    );
+  };
+
+  const agregarTag = () => {
+    const tag = tagInput.trim().toLowerCase();
+    if (!tag) return;
+    if (!seleccionados.includes(tag)) {
+      setSeleccionados(prev => [...prev, tag]);
+    }
+    setTagInput('');
+  };
+
+  const quitarTag = (nombre: string) => {
+    setSeleccionados(prev => prev.filter(e => e !== nombre));
+  };
 
   const seleccionarImagen = async () => {
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -37,7 +68,6 @@ export default function NuevaPublicacionScreen() {
       Alert.alert('Permiso necesario', 'Necesitamos acceso a tu galería para subir fotos.');
       return;
     }
-
     const resultado = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ImagePicker.MediaTypeOptions.Images,
       allowsEditing: true,
@@ -45,7 +75,6 @@ export default function NuevaPublicacionScreen() {
       quality: 0.7,
       base64: true,
     });
-
     if (!resultado.canceled && resultado.assets[0]) {
       const asset = resultado.assets[0];
       setImagenUri(asset.uri);
@@ -58,13 +87,13 @@ export default function NuevaPublicacionScreen() {
       Alert.alert('Error', 'Selecciona una imagen antes de publicar.');
       return;
     }
-
     try {
       setLoading(true);
       await publicacionesService.crear({
+        usuario: idUsuario ? { idUsuario } : undefined,
         fotoUrl: imagenBase64,
         descripcion: descripcion.trim() || undefined,
-        estilo: estilo.trim() || undefined,
+        estilos: seleccionados.length > 0 ? seleccionados : undefined,
         zonaCuerpo: zonaCuerpo.trim() || undefined,
       });
       Alert.alert('¡Publicado!', 'Tu trabajo ya está visible en el feed.', [
@@ -129,20 +158,66 @@ export default function NuevaPublicacionScreen() {
             textAlignVertical="top"
           />
 
-          <Text style={styles.label}>Estilo</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.estilosRow}>
-            {ESTILOS.map((e) => (
-              <TouchableOpacity
-                key={e}
-                style={[styles.estiloBtn, estilo === e && styles.estiloBtnActive]}
-                onPress={() => setEstilo(estilo === e ? '' : e)}
-              >
-                <Text style={[styles.estiloBtnText, estilo === e && styles.estiloBtnTextActive]}>
-                  {e}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </ScrollView>
+          {/* ── Estilos ── */}
+          <Text style={styles.label}>Estilos</Text>
+
+          {/* Tags ya seleccionados */}
+          {seleccionados.length > 0 && (
+            <View style={styles.selectedTags}>
+              {seleccionados.map(tag => (
+                <TouchableOpacity
+                  key={tag}
+                  style={styles.selectedTag}
+                  onPress={() => quitarTag(tag)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.selectedTagText}>{tag}</Text>
+                  <Ionicons name="close" size={13} color={Colors.white} style={{ marginLeft: 4 }} />
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+
+          {/* Chips populares */}
+          {popularStyles.length > 0 && (
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
+              {popularStyles.map(e => {
+                const activo = seleccionados.includes(e.nombre);
+                return (
+                  <TouchableOpacity
+                    key={e.idEstilo}
+                    style={[styles.chip, activo && styles.chipActivo]}
+                    onPress={() => toggleEstilo(e.nombre)}
+                    activeOpacity={0.7}
+                  >
+                    <Text style={[styles.chipText, activo && styles.chipTextActivo]}>{e.nombre}</Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </ScrollView>
+          )}
+
+          {/* Input para estilo personalizado */}
+          <View style={styles.tagInputRow}>
+            <TextInput
+              ref={tagInputRef}
+              style={styles.tagInput}
+              placeholder="Añadir estilo personalizado..."
+              placeholderTextColor={Colors.textMuted}
+              value={tagInput}
+              onChangeText={setTagInput}
+              onSubmitEditing={agregarTag}
+              returnKeyType="done"
+              autoCapitalize="none"
+            />
+            <TouchableOpacity
+              style={[styles.tagAddBtn, !tagInput.trim() && styles.tagAddBtnDisabled]}
+              onPress={agregarTag}
+              disabled={!tagInput.trim()}
+            >
+              <Ionicons name="add" size={20} color={tagInput.trim() ? Colors.white : Colors.textMuted} />
+            </TouchableOpacity>
+          </View>
 
           <Text style={styles.label}>Zona del cuerpo</Text>
           <TextInput
@@ -226,8 +301,20 @@ const styles = StyleSheet.create({
     color: Colors.text,
   },
   inputMultiline: { minHeight: 80, textAlignVertical: 'top' },
-  estilosRow: { marginBottom: 4 },
-  estiloBtn: {
+  /* Selected tags */
+  selectedTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+  selectedTag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.primary,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+  },
+  selectedTagText: { color: Colors.white, fontSize: 13, fontWeight: '600' },
+  /* Popular chips */
+  chipsRow: { marginBottom: 8 },
+  chip: {
     paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
@@ -236,9 +323,30 @@ const styles = StyleSheet.create({
     marginRight: 8,
     backgroundColor: Colors.surface,
   },
-  estiloBtnActive: { backgroundColor: Colors.primary, borderColor: Colors.primary },
-  estiloBtnText: { fontSize: 13, color: Colors.textSecondary },
-  estiloBtnTextActive: { color: Colors.white, fontWeight: '700' },
+  chipActivo: { backgroundColor: Colors.primary + '33', borderColor: Colors.primary },
+  chipText: { fontSize: 13, color: Colors.textSecondary },
+  chipTextActivo: { color: Colors.primary, fontWeight: '700' },
+  /* Tag input */
+  tagInputRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+  tagInput: {
+    flex: 1,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: Colors.text,
+  },
+  tagAddBtn: {
+    width: 44,
+    backgroundColor: Colors.primary,
+    borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  tagAddBtnDisabled: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
   submitBtn: {
     backgroundColor: Colors.primary,
     borderRadius: 12,

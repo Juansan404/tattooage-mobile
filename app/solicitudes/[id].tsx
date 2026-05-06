@@ -14,11 +14,15 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Client } from '@stomp/stompjs';
 import { solicitudesService } from '../../services/solicitudes.service';
 import { mensajesService } from '../../services/mensajes.service';
 import { SolicitudCita, Mensaje, EstadoSolicitud } from '../../types/solicitud.types';
 import { Colors } from '../../constants/colors';
 import { useAuthStore } from '../../store/auth.store';
+import { API_BASE_URL } from '../../constants/config';
+
+const WS_URL = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://').replace('/api', '/ws');
 
 const ESTADO_COLORS: Record<EstadoSolicitud, string> = {
   Pendiente: Colors.warning,
@@ -36,8 +40,9 @@ export default function DetalleSolicitudScreen() {
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [nuevoMensaje, setNuevoMensaje] = useState('');
   const [loading, setLoading] = useState(true);
-  const [enviando, setEnviando] = useState(false);
+  const [conectado, setConectado] = useState(false);
   const listRef = useRef<FlatList>(null);
+  const stompClient = useRef<Client | null>(null);
 
   useEffect(() => {
     const cargar = async () => {
@@ -58,22 +63,54 @@ export default function DetalleSolicitudScreen() {
     cargar();
   }, [id]);
 
-  const handleEnviarMensaje = async () => {
+  useEffect(() => {
+    const client = new Client({
+      brokerURL: WS_URL,
+      reconnectDelay: 5000,
+      onConnect: () => {
+        setConectado(true);
+        client.subscribe(`/topic/solicitud/${id}`, (frame) => {
+          const msg: Mensaje = JSON.parse(frame.body);
+          setMensajes((prev) => {
+            const yaExiste = prev.some((m) => m.idMensaje === msg.idMensaje);
+            if (yaExiste) return prev;
+            return [...prev, msg];
+          });
+          setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+        });
+      },
+      onDisconnect: () => setConectado(false),
+      onStompError: () => setConectado(false),
+    });
+
+    client.activate();
+    stompClient.current = client;
+
+    return () => {
+      client.deactivate();
+      stompClient.current = null;
+    };
+  }, [id]);
+
+  const handleEnviarMensaje = () => {
     if (!nuevoMensaje.trim() || !idUsuario) return;
-    try {
-      setEnviando(true);
-      const msg = await mensajesService.enviar({
+    const texto = nuevoMensaje.trim();
+    setNuevoMensaje('');
+
+    if (stompClient.current?.connected) {
+      stompClient.current.publish({
+        destination: `/app/solicitud/${id}/mensaje`,
+        body: JSON.stringify({ idRemitente: idUsuario, contenido: texto }),
+      });
+    } else {
+      mensajesService.enviar({
         solicitud: { idSolicitud: Number(id) },
         remitente: { idUsuario },
-        contenido: nuevoMensaje.trim(),
-      });
-      setMensajes((prev) => [...prev, msg]);
-      setNuevoMensaje('');
-      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
-    } catch {
-      Alert.alert('Error', 'No se pudo enviar el mensaje.');
-    } finally {
-      setEnviando(false);
+        contenido: texto,
+      }).then((msg) => {
+        setMensajes((prev) => [...prev, msg]);
+        setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+      }).catch(() => Alert.alert('Error', 'No se pudo enviar el mensaje.'));
     }
   };
 
@@ -119,10 +156,18 @@ export default function DetalleSolicitudScreen() {
           <TouchableOpacity onPress={() => router.back()}>
             <Ionicons name="chevron-back" size={26} color={Colors.text} />
           </TouchableOpacity>
-          <View style={[styles.estadoBadge, { backgroundColor: ESTADO_COLORS[solicitud.estado] + '22' }]}>
-            <Text style={[styles.estadoText, { color: ESTADO_COLORS[solicitud.estado] }]}>
-              {solicitud.estado}
-            </Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            <View style={[styles.wsBadge, { backgroundColor: conectado ? Colors.success + '33' : Colors.textMuted + '33' }]}>
+              <View style={[styles.wsDot, { backgroundColor: conectado ? Colors.success : Colors.textMuted }]} />
+              <Text style={[styles.wsText, { color: conectado ? Colors.success : Colors.textMuted }]}>
+                {conectado ? 'En vivo' : 'Conectando…'}
+              </Text>
+            </View>
+            <View style={[styles.estadoBadge, { backgroundColor: ESTADO_COLORS[solicitud.estado] + '22' }]}>
+              <Text style={[styles.estadoText, { color: ESTADO_COLORS[solicitud.estado] }]}>
+                {solicitud.estado}
+              </Text>
+            </View>
           </View>
         </View>
 
@@ -144,7 +189,6 @@ export default function DetalleSolicitudScreen() {
             )}
           </View>
 
-          {/* Acciones del artista */}
           {esArtista && solicitud.estado === 'Pendiente' && (
             <View style={styles.artActions}>
               <TouchableOpacity
@@ -210,13 +254,9 @@ export default function DetalleSolicitudScreen() {
             <TouchableOpacity
               style={[styles.sendBtn, !nuevoMensaje.trim() && styles.sendBtnDisabled]}
               onPress={handleEnviarMensaje}
-              disabled={!nuevoMensaje.trim() || enviando}
+              disabled={!nuevoMensaje.trim()}
             >
-              {enviando ? (
-                <ActivityIndicator size="small" color={Colors.white} />
-              ) : (
-                <Ionicons name="send" size={18} color={Colors.white} />
-              )}
+              <Ionicons name="send" size={18} color={Colors.white} />
             </TouchableOpacity>
           </View>
         )}
@@ -237,7 +277,16 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border,
   },
-  backText: { color: Colors.primary, fontSize: 16, fontWeight: '600' },
+  wsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 8,
+    paddingVertical: 3,
+    borderRadius: 8,
+    gap: 5,
+  },
+  wsDot: { width: 6, height: 6, borderRadius: 3 },
+  wsText: { fontSize: 11, fontWeight: '600' },
   estadoBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   estadoText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
   infoBox: {
@@ -334,5 +383,4 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   sendBtnDisabled: { opacity: 0.5 },
-  sendText: { color: Colors.white, fontWeight: '700', fontSize: 22, marginTop: -2 },
 });

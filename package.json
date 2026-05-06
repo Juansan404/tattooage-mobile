@@ -11,6 +11,7 @@
   "dependencies": {
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@stomp/stompjs": "^7.3.0",
     "axios": "^1.15.2",
     "expo": "~54.0.34",
     "expo-constants": "~18.0.13",

@@ -1,4 +1,4 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
@@ -10,39 +10,76 @@ import {
   StatusBar,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { publicacionesService } from '../../services/publicaciones.service';
+import { notificacionesService } from '../../services/notificaciones.service';
 import { Publicacion } from '../../types/publicacion.types';
 import { Colors } from '../../constants/colors';
+import { useAuthStore } from '../../store/auth.store';
 import PostCard from '../../components/feed/PostCard';
-import StoriesRow from '../../components/feed/StoriesRow';
+
+const PAGE_SIZE = 15;
 
 export default function FeedScreen() {
+  const router = useRouter();
+  const { idUsuario } = useAuthStore();
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [noLeidas, setNoLeidas] = useState(0);
 
-  const cargarFeed = useCallback(async () => {
+  const nextPage = useRef(0);
+  const fetching = useRef(false);
+
+  const cargarPagina = useCallback(async (reset: boolean) => {
+    if (fetching.current) return;
+    fetching.current = true;
+
+    const page = reset ? 0 : nextPage.current;
+
     try {
       setError(null);
-      const data = await publicacionesService.getFeed();
-      setPublicaciones(data);
+      const data = await publicacionesService.getFeedPage(page, PAGE_SIZE);
+      const content: Publicacion[] = Array.isArray(data)
+        ? (data as unknown as Publicacion[])
+        : (data.content ?? []);
+      const isLast: boolean = Array.isArray(data) ? true : (data.last ?? true);
+      setPublicaciones(prev => reset ? content : [...prev, ...content]);
+      setHasMore(!isLast);
+      nextPage.current = page + 1;
     } catch {
       setError('No se pudo cargar el feed. Verifica tu conexión.');
     } finally {
       setLoading(false);
       setRefreshing(false);
+      setLoadingMore(false);
+      fetching.current = false;
     }
   }, []);
 
-  useEffect(() => {
-    cargarFeed();
-  }, [cargarFeed]);
+  useEffect(() => { cargarPagina(true); }, [cargarPagina]);
+
+  useFocusEffect(useCallback(() => {
+    if (!idUsuario) return;
+    notificacionesService.countNoLeidas(idUsuario)
+      .then(setNoLeidas)
+      .catch(() => {});
+  }, [idUsuario]));
 
   const onRefresh = () => {
     setRefreshing(true);
-    cargarFeed();
+    setHasMore(true);
+    cargarPagina(true);
+  };
+
+  const onEndReached = () => {
+    if (!hasMore || loadingMore || loading || refreshing) return;
+    setLoadingMore(true);
+    cargarPagina(false);
   };
 
   if (loading) {
@@ -57,14 +94,23 @@ export default function FeedScreen() {
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
 
-      {/* ── Header estilo Instagram ── */}
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerLogo}>
           Tattoo<Text style={styles.headerLogoAccent}>Age</Text>
         </Text>
         <View style={styles.headerIcons}>
-          <TouchableOpacity style={styles.headerIcon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity
+            style={styles.headerIcon}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => router.push('/notificaciones')}
+          >
             <Ionicons name="heart-outline" size={26} color={Colors.text} />
+            {noLeidas > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{noLeidas > 99 ? '99+' : noLeidas}</Text>
+              </View>
+            )}
           </TouchableOpacity>
           <TouchableOpacity style={styles.headerIcon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
             <Ionicons name="paper-plane-outline" size={26} color={Colors.text} />
@@ -75,7 +121,7 @@ export default function FeedScreen() {
       {error ? (
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
-          <TouchableOpacity style={styles.retryBtn} onPress={cargarFeed}>
+          <TouchableOpacity style={styles.retryBtn} onPress={() => cargarPagina(true)}>
             <Text style={styles.retryText}>Reintentar</Text>
           </TouchableOpacity>
         </View>
@@ -84,7 +130,6 @@ export default function FeedScreen() {
           data={publicaciones}
           keyExtractor={(item) => String(item.idPublicacion)}
           renderItem={({ item }) => <PostCard publicacion={item} />}
-          ListHeaderComponent={<StoriesRow />}
           refreshControl={
             <RefreshControl
               refreshing={refreshing}
@@ -92,6 +137,17 @@ export default function FeedScreen() {
               tintColor={Colors.primary}
               colors={[Colors.primary]}
             />
+          }
+          onEndReached={onEndReached}
+          onEndReachedThreshold={0.4}
+          ListFooterComponent={
+            loadingMore ? (
+              <View style={styles.footerLoader}>
+                <ActivityIndicator size="small" color={Colors.primary} />
+              </View>
+            ) : !hasMore && publicaciones.length > 0 ? (
+              <Text style={styles.footerEnd}>— Ya lo has visto todo —</Text>
+            ) : null
           }
           contentContainerStyle={
             publicaciones.length === 0 ? styles.emptyContainer : undefined
@@ -105,9 +161,7 @@ export default function FeedScreen() {
             </View>
           }
           showsVerticalScrollIndicator={false}
-          ItemSeparatorComponent={() => (
-            <View style={styles.separator} />
-          )}
+          ItemSeparatorComponent={() => <View style={styles.separator} />}
         />
       )}
     </SafeAreaView>
@@ -115,17 +169,8 @@ export default function FeedScreen() {
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  center: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 24,
-  },
-  /* Header */
+  container: { flex: 1, backgroundColor: Colors.background },
+  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -142,22 +187,30 @@ const styles = StyleSheet.create({
     letterSpacing: -0.5,
     fontStyle: 'italic',
   },
-  headerLogoAccent: {
-    color: Colors.primary,
+  headerLogoAccent: { color: Colors.primary },
+  headerIcons: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+  headerIcon: { position: 'relative' },
+  badge: {
+    position: 'absolute',
+    top: -5, right: -6,
+    backgroundColor: '#e94560',
+    borderRadius: 9,
+    minWidth: 18, height: 18,
+    justifyContent: 'center', alignItems: 'center',
+    paddingHorizontal: 3,
+    borderWidth: 1.5, borderColor: Colors.background,
   },
-  headerIcons: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 18,
+  badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+  separator: { height: 0.5, backgroundColor: Colors.border },
+  footerLoader: { paddingVertical: 20, alignItems: 'center' },
+  footerEnd: {
+    textAlign: 'center',
+    color: Colors.textMuted,
+    fontSize: 12,
+    paddingVertical: 20,
+    letterSpacing: 0.5,
   },
-  headerIcon: {},
-  headerIconText: {
-    fontSize: 22,
-  },
-  /* Vacío */
-  emptyContainer: {
-    flexGrow: 1,
-  },
+  emptyContainer: { flexGrow: 1 },
   emptyInner: {
     flex: 1,
     justifyContent: 'center',
@@ -178,26 +231,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     lineHeight: 20,
   },
-  /* Error */
-  errorText: {
-    color: Colors.error,
-    textAlign: 'center',
-    fontSize: 15,
-    marginBottom: 16,
-  },
+  errorText: { color: Colors.error, textAlign: 'center', fontSize: 15, marginBottom: 16 },
   retryBtn: {
     backgroundColor: Colors.primary,
     paddingHorizontal: 24,
     paddingVertical: 10,
     borderRadius: 8,
   },
-  retryText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-  separator: {
-    height: 0.5,
-    backgroundColor: Colors.border,
-  },
+  retryText: { color: Colors.white, fontWeight: '700', fontSize: 14 },
 });

@@ -112,7 +112,11 @@ export default function FeedScreen() {
               </View>
             )}
           </TouchableOpacity>
-          <TouchableOpacity style={styles.headerIcon} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+          <TouchableOpacity
+            style={styles.headerIcon}
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+            onPress={() => router.push('/conversaciones')}
+          >
             <Ionicons name="paper-plane-outline" size={26} color={Colors.text} />
           </TouchableOpacity>
         </View>

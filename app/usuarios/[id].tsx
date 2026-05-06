@@ -16,6 +16,7 @@ import { useLocalSearchParams, useRouter } from 'expo-router';
 import api from '../../services/api';
 import { artistasService } from '../../services/artistas.service';
 import { publicacionesService } from '../../services/publicaciones.service';
+import { conversacionesService } from '../../services/conversaciones.service';
 import { Usuario, PerfilArtista } from '../../types/usuario.types';
 import { Publicacion } from '../../types/publicacion.types';
 import { Colors } from '../../constants/colors';
@@ -37,6 +38,7 @@ export default function PerfilPublicoScreen() {
   const [seguidores, setSeguidores] = useState(0);
   const [seguidos, setSeguidos] = useState(0);
   const [followLoading, setFollowLoading] = useState(false);
+  const [msgLoading, setMsgLoading] = useState(false);
 
   const numId = Number(id);
   const esMiPerfil = idUsuario === numId;
@@ -74,6 +76,19 @@ export default function PerfilPublicoScreen() {
     };
     cargar();
   }, [id]);
+
+  const handleMensaje = async () => {
+    if (!idUsuario || msgLoading) return;
+    setMsgLoading(true);
+    try {
+      const conv = await conversacionesService.findOrCreate(idUsuario, numId);
+      router.push(`/conversaciones/${conv.idConversacion}`);
+    } catch {
+      Alert.alert('Error', 'No se pudo abrir la conversación.');
+    } finally {
+      setMsgLoading(false);
+    }
+  };
 
   const handleSeguir = async () => {
     if (!idUsuario || followLoading) return;
@@ -190,6 +205,13 @@ export default function PerfilPublicoScreen() {
                 <Text style={[styles.btnText, siguiendo && styles.btnTextSecondary]}>
                   {siguiendo ? 'Siguiendo' : 'Seguir'}
                 </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btnPrimary, msgLoading && { opacity: 0.6 }]}
+                onPress={handleMensaje}
+                disabled={msgLoading}
+              >
+                <Text style={styles.btnText}>Mensaje</Text>
               </TouchableOpacity>
               {perfil?.disponible && (
                 <TouchableOpacity

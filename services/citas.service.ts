@@ -2,8 +2,9 @@ import api from './api';
 import { Cita, EstadoCita } from '../types/cita.types';
 
 export const citasService = {
-  async getMias(): Promise<Cita[]> {
-    const response = await api.get<Cita[]>('/citas');
+  async getMias(idUsuario: number, rol: string): Promise<Cita[]> {
+    const segmento = rol === 'ARTISTA' ? 'artista' : 'cliente';
+    const response = await api.get<Cita[]>(`/citas/${segmento}/${idUsuario}`);
     return response.data;
   },
 

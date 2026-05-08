@@ -24,14 +24,15 @@ const ESTADO_COLORS: Record<EstadoSolicitud, string> = {
 
 export default function SolicitudesScreen() {
   const router = useRouter();
-  const { rol } = useAuthStore();
+  const { rol, idUsuario } = useAuthStore();
   const [solicitudes, setSolicitudes] = useState<SolicitudCita[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const cargar = useCallback(async () => {
+    if (!idUsuario || !rol) return;
     try {
-      const data = await solicitudesService.getMias();
+      const data = await solicitudesService.getMias(idUsuario, rol);
       setSolicitudes(data);
     } catch {
       setSolicitudes([]);
@@ -41,7 +42,7 @@ export default function SolicitudesScreen() {
     }
   }, []);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => { cargar(); }, [cargar, idUsuario, rol]);
 
   const onRefresh = () => { setRefreshing(true); cargar(); };
 

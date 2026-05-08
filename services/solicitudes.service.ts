@@ -2,8 +2,9 @@ import api from './api';
 import { SolicitudCita, CrearSolicitudRequest, EstadoSolicitud } from '../types/solicitud.types';
 
 export const solicitudesService = {
-  async getMias(): Promise<SolicitudCita[]> {
-    const response = await api.get<SolicitudCita[]>('/solicitudes');
+  async getMias(idUsuario: number, rol: string): Promise<SolicitudCita[]> {
+    const segmento = rol === 'ARTISTA' ? 'artista' : 'cliente';
+    const response = await api.get<SolicitudCita[]>(`/solicitudes/${segmento}/${idUsuario}`);
     return response.data;
   },
 

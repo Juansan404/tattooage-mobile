@@ -24,14 +24,15 @@ const ESTADO_COLORS: Record<EstadoCita, string> = {
 
 export default function CitasScreen() {
   const router = useRouter();
-  const { rol } = useAuthStore();
+  const { rol, idUsuario } = useAuthStore();
   const [citas, setCitas] = useState<Cita[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   const cargar = useCallback(async () => {
+    if (!idUsuario || !rol) return;
     try {
-      const data = await citasService.getMias();
+      const data = await citasService.getMias(idUsuario, rol);
       setCitas(data);
     } catch {
       setCitas([]);
@@ -41,7 +42,7 @@ export default function CitasScreen() {
     }
   }, []);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  useEffect(() => { cargar(); }, [cargar, idUsuario, rol]);
 
   const onRefresh = () => { setRefreshing(true); cargar(); };
 

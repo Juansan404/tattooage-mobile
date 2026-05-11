@@ -38,14 +38,8 @@ export default function DetallePublicacionScreen() {
     backText: { color: Colors.primary, fontSize: 16, fontWeight: '600' },
     image: { width: SCREEN_WIDTH, height: SCREEN_WIDTH, backgroundColor: Colors.surface },
     info: { padding: 16, gap: 10 },
-    likeRow: { flexDirection: 'row', gap: 16, alignItems: 'center', flexWrap: 'wrap' },
+    likeRow: { flexDirection: 'row', gap: 16 },
     actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 4 },
-    arBtn: {
-      flexDirection: 'row', alignItems: 'center', gap: 6,
-      backgroundColor: Colors.primary, paddingHorizontal: 14,
-      paddingVertical: 8, borderRadius: 20, marginLeft: 'auto',
-    },
-    arBtnText: { color: Colors.white, fontWeight: '700', fontSize: 13 },
     actionIcon: { fontSize: 24 },
     actionCount: { fontSize: 15, color: Colors.textSecondary, fontWeight: '600' },
     descripcion: { fontSize: 15, color: Colors.text, lineHeight: 22 },
@@ -208,14 +202,6 @@ export default function DetallePublicacionScreen() {
                   color={liked ? Colors.primary : Colors.text}
                 />
                 <Text style={styles.actionCount}>{likeCount}</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.arBtn}
-                onPress={() => router.push(`/ar/${id}`)}
-                activeOpacity={0.8}
-              >
-                <Ionicons name="scan-outline" size={18} color={Colors.white} />
-                <Text style={styles.arBtnText}>Probar en RA</Text>
               </TouchableOpacity>
             </View>
 

@@ -306,6 +306,11 @@ export default function PostCard({ publicacion, onLike }: Props) {
       <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
         <Pressable style={styles.backdrop} onPress={() => setMenuVisible(false)}>
           <View style={[styles.menuCard, { top: menuPos.top, right: menuPos.right }]}>
+            <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); router.push(`/ar/${idPublicacion}`); }}>
+              <Ionicons name="scan-outline" size={18} color={Colors.text} />
+              <Text style={styles.menuItemText}>Probar en RA</Text>
+            </TouchableOpacity>
+            <View style={styles.menuDivider} />
             <TouchableOpacity style={styles.menuItem} onPress={handleDenunciar}>
               <Ionicons name="flag-outline" size={18} color={Colors.error} />
               <Text style={styles.menuItemTextDanger}>Denunciar imagen</Text>

@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/datetimepicker';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { citasService } from '../../services/citas.service';
 import { Cita, EstadoCita } from '../../types/cita.types';
@@ -92,6 +93,19 @@ export default function DetalleCitaScreen() {
       color: Colors.text,
     },
     inputMultiline: { minHeight: 70, textAlignVertical: 'top' },
+    pickerBtn: {
+      backgroundColor: Colors.surface,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      paddingHorizontal: 14,
+      paddingVertical: 13,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 10,
+    },
+    pickerBtnText: { fontSize: 15, color: Colors.text, flex: 1 },
+    pickerBtnPlaceholder: { fontSize: 15, color: Colors.textMuted, flex: 1 },
     row: { flexDirection: 'row', gap: 12 },
     saveBtn: {
       backgroundColor: Colors.primary,
@@ -130,21 +144,57 @@ export default function DetalleCitaScreen() {
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
 
-  // Campos del formulario de edición (artista)
-  const [fecha, setFecha] = useState('');
-  const [hora, setHora] = useState('');
+  const [fecha, setFecha] = useState<Date | null>(null);
+  const [hora, setHora] = useState<Date | null>(null);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [showTimePicker, setShowTimePicker] = useState(false);
   const [duracion, setDuracion] = useState('');
   const [precio, setPrecio] = useState('');
   const [sala, setSala] = useState('');
   const [notas, setNotas] = useState('');
+
+  const parseFecha = (s?: string): Date | null => {
+    if (!s) return null;
+    const d = new Date(s + 'T00:00:00');
+    return isNaN(d.getTime()) ? null : d;
+  };
+
+  const parseHora = (s?: string): Date | null => {
+    if (!s) return null;
+    const [h, m] = s.split(':').map(Number);
+    const d = new Date();
+    d.setHours(h, m, 0, 0);
+    return d;
+  };
+
+  const formatFecha = (d: Date) =>
+    d.toLocaleDateString('es-ES', { weekday: 'short', day: 'numeric', month: 'long', year: 'numeric' });
+
+  const formatHora = (d: Date) =>
+    d.toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' });
+
+  const toISOFecha = (d: Date) => d.toISOString().split('T')[0];
+
+  const toISOHora = (d: Date) =>
+    `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
+
+  const onDateChange = (_: DateTimePickerEvent, selected?: Date) => {
+    setShowDatePicker(Platform.OS === 'ios');
+    if (selected) setFecha(selected);
+  };
+
+  const onTimeChange = (_: DateTimePickerEvent, selected?: Date) => {
+    setShowTimePicker(Platform.OS === 'ios');
+    if (selected) setHora(selected);
+  };
 
   useEffect(() => {
     const cargar = async () => {
       try {
         const data = await citasService.getById(Number(id));
         setCita(data);
-        setFecha(data.fechaCita ?? '');
-        setHora(data.horaInicio ?? '');
+        setFecha(parseFecha(data.fechaCita));
+        setHora(parseHora(data.horaInicio));
         setDuracion(data.duracionAproximada != null ? String(data.duracionAproximada) : '');
         setPrecio(data.precio != null ? String(data.precio) : '');
         setSala(data.sala ?? '');
@@ -160,15 +210,15 @@ export default function DetalleCitaScreen() {
   }, [id]);
 
   const handleGuardar = async () => {
-    if (!fecha.trim()) {
+    if (!fecha) {
       Alert.alert('Campo requerido', 'La fecha es obligatoria.');
       return;
     }
     setGuardando(true);
     try {
       const actualizada = await citasService.actualizar(Number(id), {
-        fechaCita: fecha.trim(),
-        horaInicio: hora.trim() || undefined,
+        fechaCita: toISOFecha(fecha),
+        horaInicio: hora ? toISOHora(hora) : undefined,
         duracionAproximada: duracion ? Number(duracion) : undefined,
         precio: precio ? Number(precio) : undefined,
         sala: sala.trim() || undefined,
@@ -275,30 +325,45 @@ export default function DetalleCitaScreen() {
 
               <View style={styles.group}>
                 <Text style={styles.label}>Fecha *</Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="AAAA-MM-DD"
-                  placeholderTextColor={Colors.textMuted}
-                  value={fecha}
-                  onChangeText={setFecha}
-                  keyboardType="numbers-and-punctuation"
-                  maxLength={10}
-                />
-                <Text style={styles.hint}>Formato: AAAA-MM-DD</Text>
+                <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowDatePicker(true)}>
+                  <Ionicons name="calendar-outline" size={18} color={Colors.textMuted} />
+                  {fecha ? (
+                    <Text style={styles.pickerBtnText}>{formatFecha(fecha)}</Text>
+                  ) : (
+                    <Text style={styles.pickerBtnPlaceholder}>Selecciona una fecha</Text>
+                  )}
+                </TouchableOpacity>
+                {showDatePicker && (
+                  <DateTimePicker
+                    value={fecha ?? new Date()}
+                    mode="date"
+                    display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                    minimumDate={new Date()}
+                    onChange={onDateChange}
+                  />
+                )}
               </View>
 
               <View style={styles.row}>
                 <View style={[styles.group, { flex: 1 }]}>
                   <Text style={styles.label}>Hora inicio</Text>
-                  <TextInput
-                    style={styles.input}
-                    placeholder="HH:MM"
-                    placeholderTextColor={Colors.textMuted}
-                    value={hora}
-                    onChangeText={setHora}
-                    keyboardType="numbers-and-punctuation"
-                    maxLength={5}
-                  />
+                  <TouchableOpacity style={styles.pickerBtn} onPress={() => setShowTimePicker(true)}>
+                    <Ionicons name="time-outline" size={18} color={Colors.textMuted} />
+                    {hora ? (
+                      <Text style={styles.pickerBtnText}>{formatHora(hora)}</Text>
+                    ) : (
+                      <Text style={styles.pickerBtnPlaceholder}>Hora</Text>
+                    )}
+                  </TouchableOpacity>
+                  {showTimePicker && (
+                    <DateTimePicker
+                      value={hora ?? new Date()}
+                      mode="time"
+                      display={Platform.OS === 'ios' ? 'spinner' : 'default'}
+                      is24Hour
+                      onChange={onTimeChange}
+                    />
+                  )}
                 </View>
                 <View style={[styles.group, { flex: 1 }]}>
                   <Text style={styles.label}>Duración (min)</Text>

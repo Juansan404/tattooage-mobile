@@ -513,6 +513,18 @@ export default function PerfilScreen() {
             <Text style={styles.menuItemText}>Editar perfil</Text>
           </TouchableOpacity>
           <View style={styles.menuDivider} />
+          {(rol === 'ARTISTA' || rol === 'ADMIN') && (
+            <>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { setMenuVisible(false); router.push('/estadisticas'); }}
+              >
+                <Ionicons name="bar-chart-outline" size={22} color={Colors.text} />
+                <Text style={styles.menuItemText}>Estadísticas</Text>
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+            </>
+          )}
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => { setMenuVisible(false); router.push('/guardados'); }}

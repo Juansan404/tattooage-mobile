@@ -19,9 +19,11 @@ import { citasService } from '../../services/citas.service';
 import { Cita, EstadoCita } from '../../types/cita.types';
 import { useAuthStore } from '../../store/auth.store';
 import { useColors } from '../../hooks/useColors';
+import { useThemeStore } from '../../store/theme.store';
 
 export default function DetalleCitaScreen() {
   const Colors = useColors();
+  const isDark = useThemeStore((s) => s.isDark);
   const ESTADO_COLORS: Record<EstadoCita, string> = {
     Pendiente: Colors.warning,
     Confirmada: Colors.success,
@@ -339,6 +341,9 @@ export default function DetalleCitaScreen() {
                     mode="date"
                     display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                     minimumDate={new Date()}
+                    themeVariant={isDark ? 'dark' : 'light'}
+                    accentColor={Colors.primary}
+                    textColor={Colors.text}
                     onChange={onDateChange}
                   />
                 )}
@@ -361,6 +366,9 @@ export default function DetalleCitaScreen() {
                       mode="time"
                       display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                       is24Hour
+                      themeVariant={isDark ? 'dark' : 'light'}
+                      accentColor={Colors.primary}
+                      textColor={Colors.text}
                       onChange={onTimeChange}
                     />
                   )}

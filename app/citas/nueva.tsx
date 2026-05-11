@@ -17,9 +17,11 @@ import DateTimePicker, { DateTimePickerEvent } from '@react-native-community/dat
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { citasService } from '../../services/citas.service';
 import { useColors } from '../../hooks/useColors';
+import { useThemeStore } from '../../store/theme.store';
 
 export default function NuevaCitaScreen() {
   const Colors = useColors();
+  const isDark = useThemeStore((s) => s.isDark);
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     header: {
@@ -185,6 +187,9 @@ export default function NuevaCitaScreen() {
                 mode="date"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 minimumDate={new Date()}
+                themeVariant={isDark ? 'dark' : 'light'}
+                accentColor={Colors.primary}
+                textColor={Colors.text}
                 onChange={onDateChange}
               />
             )}
@@ -207,6 +212,9 @@ export default function NuevaCitaScreen() {
                 mode="time"
                 display={Platform.OS === 'ios' ? 'spinner' : 'default'}
                 is24Hour
+                themeVariant={isDark ? 'dark' : 'light'}
+                accentColor={Colors.primary}
+                textColor={Colors.text}
                 onChange={onTimeChange}
               />
             )}

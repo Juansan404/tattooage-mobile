@@ -15,7 +15,7 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { notificacionesService } from '../services/notificaciones.service';
 import { Notificacion, TipoNotificacion } from '../types/notificacion.types';
 import { useAuthStore } from '../store/auth.store';
-import { Colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 
 function timeAgo(iso: string): string {
   const diff = Date.now() - new Date(iso).getTime();
@@ -38,16 +38,66 @@ function textoNotif(tipo: TipoNotificacion, nombre: string): string {
   }
 }
 
-function iconoNotif(tipo: TipoNotificacion): { name: string; color: string } {
-  switch (tipo) {
-    case 'LIKE':       return { name: 'heart',        color: '#e94560' };
-    case 'COMENTARIO': return { name: 'chatbubble',   color: '#3498db' };
-    case 'SEGUIDOR':   return { name: 'person-add',   color: Colors.primary };
-    case 'SOLICITUD':  return { name: 'calendar',     color: '#2ecc71' };
-  }
-}
-
 export default function NotificacionesScreen() {
+  const Colors = useColors();
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 0.5,
+      borderBottomColor: Colors.border,
+    },
+    title: { fontSize: 17, fontWeight: '700', color: Colors.text },
+    markAll: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
+    item: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      gap: 12,
+    },
+    itemUnread: { backgroundColor: Colors.surface },
+    avatarWrap: { position: 'relative' },
+    avatar: { width: 48, height: 48, borderRadius: 24 },
+    avatarPlaceholder: {
+      width: 48, height: 48, borderRadius: 24,
+      backgroundColor: Colors.surfaceLight,
+      justifyContent: 'center', alignItems: 'center',
+    },
+    avatarInitial: { fontSize: 20, fontWeight: '700', color: Colors.primary },
+    iconBadge: {
+      position: 'absolute',
+      bottom: -2, right: -2,
+      width: 20, height: 20,
+      borderRadius: 10,
+      justifyContent: 'center', alignItems: 'center',
+      borderWidth: 2, borderColor: Colors.background,
+    },
+    content: { flex: 1 },
+    texto: { fontSize: 14, color: Colors.text, lineHeight: 20 },
+    tiempo: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
+    dot: {
+      width: 8, height: 8, borderRadius: 4,
+      backgroundColor: Colors.primary,
+    },
+    separator: { height: 0.5, backgroundColor: Colors.border },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 40 },
+    emptyText: { fontSize: 15, color: Colors.textMuted, textAlign: 'center' },
+  });
+
+  const iconoNotif = (tipo: TipoNotificacion): { name: string; color: string } => {
+    switch (tipo) {
+      case 'LIKE':       return { name: 'heart',        color: '#e94560' };
+      case 'COMENTARIO': return { name: 'chatbubble',   color: '#3498db' };
+      case 'SEGUIDOR':   return { name: 'person-add',   color: Colors.primary };
+      case 'SOLICITUD':  return { name: 'calendar',     color: '#2ecc71' };
+    }
+  };
+
   const router = useRouter();
   const { idUsuario } = useAuthStore();
   const [notifs, setNotifs] = useState<Notificacion[]>([]);
@@ -164,52 +214,3 @@ export default function NotificacionesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.border,
-  },
-  title: { fontSize: 17, fontWeight: '700', color: Colors.text },
-  markAll: { fontSize: 13, color: Colors.primary, fontWeight: '600' },
-  item: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  itemUnread: { backgroundColor: Colors.surface },
-  avatarWrap: { position: 'relative' },
-  avatar: { width: 48, height: 48, borderRadius: 24 },
-  avatarPlaceholder: {
-    width: 48, height: 48, borderRadius: 24,
-    backgroundColor: Colors.surfaceLight,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  avatarInitial: { fontSize: 20, fontWeight: '700', color: Colors.primary },
-  iconBadge: {
-    position: 'absolute',
-    bottom: -2, right: -2,
-    width: 20, height: 20,
-    borderRadius: 10,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: Colors.background,
-  },
-  content: { flex: 1 },
-  texto: { fontSize: 14, color: Colors.text, lineHeight: 20 },
-  tiempo: { fontSize: 12, color: Colors.textMuted, marginTop: 2 },
-  dot: {
-    width: 8, height: 8, borderRadius: 4,
-    backgroundColor: Colors.primary,
-  },
-  separator: { height: 0.5, backgroundColor: Colors.border },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12, padding: 40 },
-  emptyText: { fontSize: 15, color: Colors.textMuted, textAlign: 'center' },
-});

@@ -20,11 +20,132 @@ import { publicacionesService } from '../../services/publicaciones.service';
 import { estilosService } from '../../services/estilos.service';
 import { useAuthStore } from '../../store/auth.store';
 import { Estilo } from '../../types/estilo.types';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 export default function NuevaPublicacionScreen() {
+  const Colors = useColors();
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: Colors.border,
+    },
+    title: { fontSize: 16, fontWeight: '700', color: Colors.text },
+    publishText: { color: Colors.primary, fontSize: 15, fontWeight: '700', width: 70, textAlign: 'right' },
+    form: { padding: 16, gap: 6 },
+    imagePicker: { borderRadius: 12, overflow: 'hidden' },
+    preview: { width: '100%', height: 300, borderRadius: 12, backgroundColor: Colors.surface },
+    imagePlaceholder: {
+      width: '100%',
+      height: 240,
+      borderRadius: 12,
+      backgroundColor: Colors.surface,
+      borderWidth: 2,
+      borderColor: Colors.border,
+      borderStyle: 'dashed',
+      justifyContent: 'center',
+      alignItems: 'center',
+      gap: 10,
+    },
+    imagePlaceholderText: { color: Colors.textMuted, fontSize: 14 },
+    changeImageBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 8,
+    },
+    changeImageText: { color: Colors.primary, fontSize: 14, fontWeight: '600' },
+    label: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+      marginTop: 12,
+      marginBottom: 4,
+    },
+    input: {
+      backgroundColor: Colors.surface,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 12,
+      fontSize: 15,
+      color: Colors.text,
+    },
+    inputMultiline: { minHeight: 80, textAlignVertical: 'top' },
+    /* Selected tags */
+    selectedTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
+    selectedTag: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: Colors.primary,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 20,
+    },
+    selectedTagText: { color: Colors.white, fontSize: 13, fontWeight: '600' },
+    /* Popular chips */
+    chipsRow: { marginBottom: 8 },
+    chip: {
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      borderRadius: 20,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      marginRight: 8,
+      backgroundColor: Colors.surface,
+    },
+    chipActivo: { backgroundColor: Colors.primary + '33', borderColor: Colors.primary },
+    chipText: { fontSize: 13, color: Colors.textSecondary },
+    chipTextActivo: { color: Colors.primary, fontWeight: '700' },
+    /* Tag input */
+    tagInputRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
+    tagInput: {
+      flex: 1,
+      backgroundColor: Colors.surface,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      fontSize: 14,
+      color: Colors.text,
+    },
+    tagAddBtn: {
+      width: 44,
+      backgroundColor: Colors.primary,
+      borderRadius: 10,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    tagAddBtnDisabled: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+    submitBtn: {
+      backgroundColor: Colors.primary,
+      borderRadius: 12,
+      paddingVertical: 16,
+      alignItems: 'center',
+      marginTop: 24,
+      marginBottom: 16,
+    },
+    submitBtnDisabled: { opacity: 0.4 },
+    submitBtnText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
+  });
+
   const router = useRouter();
-  const { idUsuario } = useAuthStore();
+  const { idUsuario, rol } = useAuthStore();
+
+  useEffect(() => {
+    if (rol && rol !== 'ARTISTA' && rol !== 'ADMIN') {
+      router.replace('/(tabs)/feed');
+    }
+  }, [rol]);
 
   const [imagenUri, setImagenUri] = useState('');
   const [imagenBase64, setImagenBase64] = useState('');
@@ -244,117 +365,3 @@ export default function NuevaPublicacionScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  title: { fontSize: 16, fontWeight: '700', color: Colors.text },
-  publishText: { color: Colors.primary, fontSize: 15, fontWeight: '700', width: 70, textAlign: 'right' },
-  form: { padding: 16, gap: 6 },
-  imagePicker: { borderRadius: 12, overflow: 'hidden' },
-  preview: { width: '100%', height: 300, borderRadius: 12, backgroundColor: Colors.surface },
-  imagePlaceholder: {
-    width: '100%',
-    height: 240,
-    borderRadius: 12,
-    backgroundColor: Colors.surface,
-    borderWidth: 2,
-    borderColor: Colors.border,
-    borderStyle: 'dashed',
-    justifyContent: 'center',
-    alignItems: 'center',
-    gap: 10,
-  },
-  imagePlaceholderText: { color: Colors.textMuted, fontSize: 14 },
-  changeImageBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 8,
-  },
-  changeImageText: { color: Colors.primary, fontSize: 14, fontWeight: '600' },
-  label: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginTop: 12,
-    marginBottom: 4,
-  },
-  input: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 12,
-    fontSize: 15,
-    color: Colors.text,
-  },
-  inputMultiline: { minHeight: 80, textAlignVertical: 'top' },
-  /* Selected tags */
-  selectedTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-  selectedTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-  },
-  selectedTagText: { color: Colors.white, fontSize: 13, fontWeight: '600' },
-  /* Popular chips */
-  chipsRow: { marginBottom: 8 },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    marginRight: 8,
-    backgroundColor: Colors.surface,
-  },
-  chipActivo: { backgroundColor: Colors.primary + '33', borderColor: Colors.primary },
-  chipText: { fontSize: 13, color: Colors.textSecondary },
-  chipTextActivo: { color: Colors.primary, fontWeight: '700' },
-  /* Tag input */
-  tagInputRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-  tagInput: {
-    flex: 1,
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    fontSize: 14,
-    color: Colors.text,
-  },
-  tagAddBtn: {
-    width: 44,
-    backgroundColor: Colors.primary,
-    borderRadius: 10,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  tagAddBtnDisabled: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
-  submitBtn: {
-    backgroundColor: Colors.primary,
-    borderRadius: 12,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 24,
-    marginBottom: 16,
-  },
-  submitBtnDisabled: { opacity: 0.4 },
-  submitBtnText: { color: Colors.white, fontSize: 16, fontWeight: '700' },
-});

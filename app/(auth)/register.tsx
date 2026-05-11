@@ -14,8 +14,8 @@ import {
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useAuthStore } from '../../store/auth.store';
-import { Colors } from '../../constants/colors';
 import { Rol } from '../../types/usuario.types';
+import { useColors } from '../../hooks/useColors';
 
 const ROLES: { label: string; value: Rol }[] = [
   { label: 'Cliente', value: 'CLIENTE' },
@@ -23,6 +23,137 @@ const ROLES: { label: string; value: Rol }[] = [
 ];
 
 export default function RegisterScreen() {
+  const Colors = useColors();
+  const styles = StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: Colors.background,
+    },
+    scroll: {
+      flexGrow: 1,
+      justifyContent: 'center',
+      paddingHorizontal: 28,
+      paddingVertical: 48,
+    },
+    header: {
+      alignItems: 'center',
+      marginBottom: 36,
+    },
+    logo: {
+      fontSize: 38,
+      fontWeight: '900',
+      color: Colors.text,
+      letterSpacing: 6,
+    },
+    logoAccent: {
+      fontSize: 38,
+      fontWeight: '900',
+      color: Colors.primary,
+      letterSpacing: 6,
+      marginTop: -8,
+    },
+    subtitle: {
+      fontSize: 14,
+      color: Colors.textSecondary,
+      marginTop: 8,
+      letterSpacing: 1,
+    },
+    form: {
+      gap: 8,
+    },
+    label: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      marginBottom: 4,
+      marginTop: 10,
+      letterSpacing: 0.5,
+      textTransform: 'uppercase',
+    },
+    input: {
+      backgroundColor: Colors.surface,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      borderRadius: 10,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      fontSize: 15,
+      color: Colors.text,
+    },
+    passwordContainer: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: Colors.surface,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      borderRadius: 10,
+    },
+    passwordInput: {
+      flex: 1,
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      fontSize: 15,
+      color: Colors.text,
+    },
+    eyeBtn: {
+      paddingHorizontal: 14,
+    },
+    rolRow: {
+      flexDirection: 'row',
+      gap: 12,
+    },
+    rolBtn: {
+      flex: 1,
+      paddingVertical: 12,
+      borderRadius: 10,
+      borderWidth: 1,
+      borderColor: Colors.border,
+      alignItems: 'center',
+      backgroundColor: Colors.surface,
+    },
+    rolBtnActive: {
+      backgroundColor: Colors.primary,
+      borderColor: Colors.primary,
+    },
+    rolBtnText: {
+      color: Colors.textSecondary,
+      fontWeight: '600',
+      fontSize: 14,
+    },
+    rolBtnTextActive: {
+      color: Colors.white,
+    },
+    button: {
+      backgroundColor: Colors.primary,
+      borderRadius: 10,
+      paddingVertical: 16,
+      alignItems: 'center',
+      marginTop: 24,
+    },
+    buttonDisabled: {
+      opacity: 0.6,
+    },
+    buttonText: {
+      color: Colors.white,
+      fontSize: 16,
+      fontWeight: '700',
+      letterSpacing: 0.5,
+    },
+    footer: {
+      flexDirection: 'row',
+      justifyContent: 'center',
+      marginTop: 28,
+    },
+    footerText: {
+      color: Colors.textSecondary,
+      fontSize: 14,
+    },
+    footerLink: {
+      color: Colors.primary,
+      fontSize: 14,
+      fontWeight: '600',
+    },
+  });
+
   const router = useRouter();
   const register = useAuthStore((s) => s.register);
 
@@ -166,133 +297,3 @@ export default function RegisterScreen() {
     </KeyboardAvoidingView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: Colors.background,
-  },
-  scroll: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    paddingHorizontal: 28,
-    paddingVertical: 48,
-  },
-  header: {
-    alignItems: 'center',
-    marginBottom: 36,
-  },
-  logo: {
-    fontSize: 38,
-    fontWeight: '900',
-    color: Colors.text,
-    letterSpacing: 6,
-  },
-  logoAccent: {
-    fontSize: 38,
-    fontWeight: '900',
-    color: Colors.primary,
-    letterSpacing: 6,
-    marginTop: -8,
-  },
-  subtitle: {
-    fontSize: 14,
-    color: Colors.textSecondary,
-    marginTop: 8,
-    letterSpacing: 1,
-  },
-  form: {
-    gap: 8,
-  },
-  label: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    marginBottom: 4,
-    marginTop: 10,
-    letterSpacing: 0.5,
-    textTransform: 'uppercase',
-  },
-  input: {
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: Colors.text,
-  },
-  passwordContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    borderRadius: 10,
-  },
-  passwordInput: {
-    flex: 1,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    fontSize: 15,
-    color: Colors.text,
-  },
-  eyeBtn: {
-    paddingHorizontal: 14,
-  },
-  rolRow: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  rolBtn: {
-    flex: 1,
-    paddingVertical: 12,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: Colors.border,
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-  },
-  rolBtnActive: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  rolBtnText: {
-    color: Colors.textSecondary,
-    fontWeight: '600',
-    fontSize: 14,
-  },
-  rolBtnTextActive: {
-    color: Colors.white,
-  },
-  button: {
-    backgroundColor: Colors.primary,
-    borderRadius: 10,
-    paddingVertical: 16,
-    alignItems: 'center',
-    marginTop: 24,
-  },
-  buttonDisabled: {
-    opacity: 0.6,
-  },
-  buttonText: {
-    color: Colors.white,
-    fontSize: 16,
-    fontWeight: '700',
-    letterSpacing: 0.5,
-  },
-  footer: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginTop: 28,
-  },
-  footerText: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-  },
-  footerLink: {
-    color: Colors.primary,
-    fontSize: 14,
-    fontWeight: '600',
-  },
-});

@@ -20,34 +20,122 @@ import { estilosService } from '../../services/estilos.service';
 import { Publicacion } from '../../types/publicacion.types';
 import { Estilo } from '../../types/estilo.types';
 import { Usuario } from '../../types/usuario.types';
-import { Colors } from '../../constants/colors';
+import { useColors } from '../../hooks/useColors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GAP = 2;
 const TILE_SIZE = (SCREEN_WIDTH - GAP * 2) / 3;
 const PAGE_SIZE = 15;
 
-function buildRows(items: Publicacion[]) {
-  const rows: { type: 'trio' | 'mosaic'; items: Publicacion[] }[] = [];
-  let i = 0;
-  let groupIndex = 0;
-  while (i < items.length) {
-    if (groupIndex % 2 === 0 && i + 3 <= items.length) {
-      rows.push({ type: 'mosaic', items: items.slice(i, i + 3) });
-      i += 3;
-    } else if (i + 3 <= items.length) {
-      rows.push({ type: 'trio', items: items.slice(i, i + 3) });
-      i += 3;
-    } else {
-      rows.push({ type: 'trio', items: items.slice(i) });
-      i = items.length;
-    }
-    groupIndex++;
-  }
-  return rows;
-}
-
 export default function ExploreScreen() {
+  const Colors = useColors();
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    headerFixed: {
+      flexShrink: 0,
+      backgroundColor: Colors.background,
+    },
+    searchBar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      backgroundColor: Colors.surface,
+      marginHorizontal: 12,
+      marginVertical: 10,
+      borderRadius: 12,
+      paddingHorizontal: 12,
+      height: 44,
+      gap: 8,
+      borderWidth: 0.5,
+      borderColor: Colors.border,
+    },
+    searchInput: { flex: 1, fontSize: 14, color: Colors.text, padding: 0 },
+    /* Users section */
+    usersSection: { paddingTop: 4, paddingBottom: 8 },
+    usersTitle: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: Colors.textSecondary,
+      paddingHorizontal: 14,
+      paddingVertical: 8,
+      textTransform: 'uppercase',
+      letterSpacing: 0.5,
+    },
+    usersEmpty: {
+      fontSize: 13,
+      color: Colors.textMuted,
+      paddingHorizontal: 14,
+      paddingBottom: 12,
+    },
+    usersScroll: { paddingHorizontal: 14, gap: 16 },
+    userCard: { alignItems: 'center', width: 68, gap: 4 },
+    userAvatar: {
+      width: 56, height: 56, borderRadius: 28,
+      borderWidth: 2, borderColor: Colors.primary,
+    },
+    userAvatarPlaceholder: {
+      width: 56, height: 56, borderRadius: 28,
+      backgroundColor: Colors.surfaceLight,
+      justifyContent: 'center', alignItems: 'center',
+      borderWidth: 2, borderColor: Colors.primary,
+    },
+    userAvatarInitial: { fontSize: 22, fontWeight: '700', color: Colors.primary },
+    userName: { fontSize: 12, fontWeight: '600', color: Colors.text, textAlign: 'center' },
+    userRol: { fontSize: 10, color: Colors.textMuted, textAlign: 'center' },
+    /* Chips de estilos */
+    chipsContainer: {
+      borderBottomWidth: 0.5,
+      borderBottomColor: Colors.border,
+      height: 46,
+    },
+    chipsScroll: {
+      paddingHorizontal: 12,
+      paddingVertical: 8,
+      gap: 8,
+      alignItems: 'center',
+      flexDirection: 'row',
+    },
+    chip: {
+      paddingHorizontal: 14,
+      paddingVertical: 5,
+      borderRadius: 20,
+      backgroundColor: Colors.surface,
+      borderWidth: 0.5,
+      borderColor: Colors.border,
+      height: 30,
+      justifyContent: 'center',
+    },
+    chipActivo: {
+      backgroundColor: Colors.primary,
+      borderColor: Colors.primary,
+    },
+    chipText: {
+      fontSize: 12,
+      color: Colors.textSecondary,
+      fontWeight: '500',
+      lineHeight: 16,
+    },
+    chipTextActivo: {
+      color: Colors.white,
+      fontWeight: '700',
+    },
+    /* Grid */
+    gridRow: { gap: GAP },
+    tile: { width: TILE_SIZE, height: TILE_SIZE, backgroundColor: Colors.surface },
+    /* Footer */
+    footerLoader: { paddingVertical: 20, alignItems: 'center' },
+    footerEnd: {
+      textAlign: 'center',
+      color: Colors.textMuted,
+      fontSize: 12,
+      paddingVertical: 20,
+      letterSpacing: 0.5,
+    },
+    /* Empty */
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+    emptyFlex: { flexGrow: 1 },
+    emptyText: { color: Colors.textSecondary, fontSize: 15, textAlign: 'center' },
+  });
+
   const router = useRouter();
   const [todas, setTodas] = useState<Publicacion[]>([]);
   const [filtradas, setFiltradas] = useState<Publicacion[]>([]);
@@ -134,76 +222,48 @@ export default function ExploreScreen() {
     cargarPagina(false);
   };
 
-  const rows = buildRows(filtradas);
-
-  const renderTile = (item: Publicacion, width: number, height: number) => (
+  const renderTile = ({ item }: { item: Publicacion }) => (
     <TouchableOpacity
-      key={item.idPublicacion}
       activeOpacity={0.85}
       onPress={() => router.push(`/publicaciones/${item.idPublicacion}`)}
     >
       <Image
         source={{ uri: item.fotoUrl }}
-        style={{ width, height, backgroundColor: Colors.surface }}
+        style={styles.tile}
         resizeMode="cover"
       />
     </TouchableOpacity>
   );
 
-  const renderRow = ({ item }: { item: ReturnType<typeof buildRows>[number] }) => {
-    if (item.type === 'trio') {
-      return (
-        <View style={styles.trioRow}>
-          {item.items.map((p) => renderTile(p, TILE_SIZE, TILE_SIZE))}
-          {item.items.length < 3 &&
-            Array.from({ length: 3 - item.items.length }).map((_, i) => (
-              <View key={`empty-${i}`} style={{ width: TILE_SIZE, height: TILE_SIZE }} />
-            ))}
-        </View>
-      );
-    }
-    const [a, b, c] = item.items;
-    const bigSize = TILE_SIZE * 2 + GAP;
-    const smallSize = TILE_SIZE;
-    return (
-      <View style={styles.mosaicRow}>
-        {a && renderTile(a, bigSize, bigSize)}
-        <View style={styles.mosaicStack}>
-          {b && renderTile(b, smallSize, smallSize)}
-          {c && renderTile(c, smallSize, smallSize)}
-          {!c && <View style={{ width: smallSize, height: smallSize }} />}
-        </View>
-      </View>
-    );
-  };
-
   return (
     <SafeAreaView style={styles.container}>
-      {/* Barra de búsqueda */}
-      <View style={styles.searchBar}>
-        <Ionicons name="search-outline" size={16} color={Colors.textMuted} />
-        <TextInput
-          style={styles.searchInput}
-          placeholder="Buscar tatuajes, estilos, artistas..."
-          placeholderTextColor={Colors.textMuted}
-          value={busqueda}
-          onChangeText={setBusqueda}
-          returnKeyType="search"
-        />
-        {busqueda.length > 0 && (
-          <TouchableOpacity onPress={() => setBusqueda('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-            <Ionicons name="close-circle" size={17} color={Colors.textMuted} />
-          </TouchableOpacity>
-        )}
-      </View>
+      {/* Cabecera fija: búsqueda + chips */}
+      <View style={styles.headerFixed}>
+        <View style={styles.searchBar}>
+          <Ionicons name="search-outline" size={16} color={Colors.textMuted} />
+          <TextInput
+            style={styles.searchInput}
+            placeholder="Buscar tatuajes, estilos, artistas..."
+            placeholderTextColor={Colors.textMuted}
+            value={busqueda}
+            onChangeText={setBusqueda}
+            returnKeyType="search"
+            allowFontScaling={false}
+          />
+          {busqueda.length > 0 && (
+            <TouchableOpacity onPress={() => setBusqueda('')} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+              <Ionicons name="close-circle" size={17} color={Colors.textMuted} />
+            </TouchableOpacity>
+          )}
+        </View>
 
-      {/* Chips de estilos */}
-      <ScrollView
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        contentContainerStyle={styles.chipsScroll}
-        style={styles.chipsContainer}
-      >
+        {/* Chips de estilos */}
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.chipsScroll}
+          style={styles.chipsContainer}
+        >
         {estilos.map((e) => {
           const activo = estiloActivo === e.nombre;
           return (
@@ -213,11 +273,12 @@ export default function ExploreScreen() {
               onPress={() => setEstiloActivo(activo ? null : e.nombre)}
               activeOpacity={0.7}
             >
-              <Text style={[styles.chipText, activo && styles.chipTextActivo]}>{e.nombre}</Text>
+              <Text style={[styles.chipText, activo && styles.chipTextActivo]} allowFontScaling={false}>{e.nombre}</Text>
             </TouchableOpacity>
           );
         })}
-      </ScrollView>
+        </ScrollView>
+      </View>
 
       {loading ? (
         <View style={styles.center}>
@@ -225,9 +286,12 @@ export default function ExploreScreen() {
         </View>
       ) : (
         <FlatList
-          data={rows}
-          keyExtractor={(_, i) => String(i)}
-          renderItem={renderRow}
+          style={{ flex: 1 }}
+          data={filtradas}
+          keyExtractor={(item) => String(item.idPublicacion)}
+          numColumns={3}
+          columnWrapperStyle={styles.gridRow}
+          renderItem={renderTile}
           ItemSeparatorComponent={() => <View style={{ height: GAP }} />}
           onEndReached={onEndReached}
           onEndReachedThreshold={0.4}
@@ -292,103 +356,3 @@ export default function ExploreScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.surface,
-    marginHorizontal: 12,
-    marginVertical: 10,
-    borderRadius: 12,
-    paddingHorizontal: 12,
-    paddingVertical: 9,
-    gap: 8,
-    borderWidth: 0.5,
-    borderColor: Colors.border,
-  },
-  searchInput: { flex: 1, fontSize: 14, color: Colors.text, padding: 0 },
-  /* Users section */
-  usersSection: { paddingTop: 4, paddingBottom: 8 },
-  usersTitle: {
-    fontSize: 13,
-    fontWeight: '700',
-    color: Colors.textSecondary,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-  },
-  usersEmpty: {
-    fontSize: 13,
-    color: Colors.textMuted,
-    paddingHorizontal: 14,
-    paddingBottom: 12,
-  },
-  usersScroll: { paddingHorizontal: 14, gap: 16 },
-  userCard: { alignItems: 'center', width: 68, gap: 4 },
-  userAvatar: {
-    width: 56, height: 56, borderRadius: 28,
-    borderWidth: 2, borderColor: Colors.primary,
-  },
-  userAvatarPlaceholder: {
-    width: 56, height: 56, borderRadius: 28,
-    backgroundColor: Colors.surfaceLight,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 2, borderColor: Colors.primary,
-  },
-  userAvatarInitial: { fontSize: 22, fontWeight: '700', color: Colors.primary },
-  userName: { fontSize: 12, fontWeight: '600', color: Colors.text, textAlign: 'center' },
-  userRol: { fontSize: 10, color: Colors.textMuted, textAlign: 'center' },
-  /* Chips de estilos */
-  chipsContainer: {
-    maxHeight: 44,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.border,
-  },
-  chipsScroll: {
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    gap: 8,
-    alignItems: 'center',
-  },
-  chip: {
-    paddingHorizontal: 14,
-    paddingVertical: 5,
-    borderRadius: 20,
-    backgroundColor: Colors.surface,
-    borderWidth: 0.5,
-    borderColor: Colors.border,
-  },
-  chipActivo: {
-    backgroundColor: Colors.primary,
-    borderColor: Colors.primary,
-  },
-  chipText: {
-    fontSize: 12,
-    color: Colors.textSecondary,
-    fontWeight: '500',
-  },
-  chipTextActivo: {
-    color: Colors.white,
-    fontWeight: '700',
-  },
-  /* Grid rows */
-  trioRow: { flexDirection: 'row', gap: GAP },
-  mosaicRow: { flexDirection: 'row', gap: GAP },
-  mosaicStack: { flexDirection: 'column', gap: GAP },
-  /* Footer */
-  footerLoader: { paddingVertical: 20, alignItems: 'center' },
-  footerEnd: {
-    textAlign: 'center',
-    color: Colors.textMuted,
-    fontSize: 12,
-    paddingVertical: 20,
-    letterSpacing: 0.5,
-  },
-  /* Empty */
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  emptyFlex: { flexGrow: 1 },
-  emptyText: { color: Colors.textSecondary, fontSize: 15, textAlign: 'center' },
-});

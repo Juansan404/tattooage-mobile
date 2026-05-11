@@ -2,9 +2,10 @@ import { useEffect } from 'react';
 import { View, ActivityIndicator } from 'react-native';
 import { useRouter, useRootNavigationState } from 'expo-router';
 import { useAuthStore } from '../store/auth.store';
-import { Colors } from '../constants/colors';
+import { useColors } from '../hooks/useColors';
 
 export default function Index() {
+  const Colors = useColors();
   const router = useRouter();
   const { isAuthenticated, isLoading } = useAuthStore();
   const rootNavState = useRootNavigationState();

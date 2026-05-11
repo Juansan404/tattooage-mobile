@@ -1,60 +1,293 @@
-import { useEffect, useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   TouchableOpacity,
   Alert,
+  Modal,
   Image,
   FlatList,
   Dimensions,
   ActivityIndicator,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter } from 'expo-router';
+import { useRouter, useFocusEffect } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '../../services/api';
 import { artistasService } from '../../services/artistas.service';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { Usuario } from '../../types/usuario.types';
 import { Publicacion } from '../../types/publicacion.types';
-import { Colors } from '../../constants/colors';
 import { useAuthStore } from '../../store/auth.store';
+import SeguidoresModal from '../../components/perfil/SeguidoresModal';
+import { useColors } from '../../hooks/useColors';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 2;
 const GRID_TILE = (SCREEN_WIDTH - GRID_GAP * 2) / 3;
 
 export default function PerfilScreen() {
+  const Colors = useColors();
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+
+    /* Header */
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderBottomWidth: 0.5,
+      borderBottomColor: Colors.border,
+    },
+    headerUsername: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: Colors.text,
+      letterSpacing: 0.2,
+    },
+    headerMenu: {
+      fontSize: 22,
+      color: Colors.text,
+    },
+
+    /* Bio section */
+    bioSection: {
+      paddingHorizontal: 16,
+      paddingTop: 16,
+      paddingBottom: 12,
+      gap: 12,
+    },
+    avatarStatsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 16,
+    },
+    avatar: {
+      width: 86,
+      height: 86,
+      borderRadius: 43,
+      borderWidth: 2,
+      borderColor: Colors.primary,
+    },
+    avatarPlaceholder: {
+      width: 86,
+      height: 86,
+      borderRadius: 43,
+      backgroundColor: Colors.surfaceLight,
+      justifyContent: 'center',
+      alignItems: 'center',
+      borderWidth: 2,
+      borderColor: Colors.primary,
+    },
+    avatarInitial: {
+      fontSize: 32,
+      fontWeight: '700',
+      color: Colors.primary,
+    },
+    statsRow: {
+      flex: 1,
+      flexDirection: 'row',
+      justifyContent: 'space-around',
+    },
+    statItem: {
+      alignItems: 'center',
+      gap: 2,
+    },
+    statNumber: {
+      fontSize: 18,
+      fontWeight: '800',
+      color: Colors.text,
+    },
+    statLabel: {
+      fontSize: 11,
+      color: Colors.textSecondary,
+    },
+    nameBlock: {
+      gap: 4,
+    },
+    displayName: {
+      fontSize: 14,
+      fontWeight: '700',
+      color: Colors.text,
+    },
+    rolBadge: {
+      alignSelf: 'flex-start',
+      backgroundColor: Colors.primary + '22',
+      paddingHorizontal: 10,
+      paddingVertical: 3,
+      borderRadius: 6,
+    },
+    rolText: {
+      color: Colors.primary,
+      fontSize: 11,
+      fontWeight: '700',
+      letterSpacing: 1,
+    },
+    bio: {
+      fontSize: 13,
+      color: Colors.textSecondary,
+      lineHeight: 18,
+      marginTop: 2,
+    },
+    /* Botones */
+    actionButtons: {
+      flexDirection: 'row',
+      gap: 10,
+    },
+    editBtn: {
+      flex: 1,
+      backgroundColor: Colors.surfaceLight,
+      borderRadius: 8,
+      paddingVertical: 8,
+      alignItems: 'center',
+      borderWidth: 0.5,
+      borderColor: Colors.border,
+    },
+    editBtnText: {
+      color: Colors.text,
+      fontWeight: '600',
+      fontSize: 13,
+    },
+    newPostBtn: {
+      flex: 1,
+      backgroundColor: Colors.primary,
+      borderRadius: 8,
+      paddingVertical: 8,
+      alignItems: 'center',
+    },
+    newPostBtnText: {
+      color: Colors.white,
+      fontWeight: '700',
+      fontSize: 13,
+    },
+
+    divider: {
+      height: 0.5,
+      backgroundColor: Colors.border,
+    },
+
+    /* Grid */
+    gridRow: {
+      gap: GRID_GAP,
+    },
+    gridTile: {
+      width: GRID_TILE,
+      height: GRID_TILE,
+      backgroundColor: Colors.surface,
+    },
+
+    /* Empty grid */
+    emptyGrid: {
+      alignItems: 'center',
+      paddingVertical: 40,
+      paddingHorizontal: 32,
+      gap: 10,
+    },
+    emptyGridTitle: {
+      fontSize: 18,
+      fontWeight: '700',
+      color: Colors.text,
+    },
+    emptyGridSub: {
+      fontSize: 13,
+      color: Colors.textSecondary,
+      textAlign: 'center',
+      lineHeight: 18,
+    },
+    uploadBtn: {
+      marginTop: 8,
+      backgroundColor: Colors.primary,
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      borderRadius: 8,
+    },
+    uploadBtnText: {
+      color: Colors.white,
+      fontWeight: '700',
+      fontSize: 14,
+    },
+
+    /* Menú */
+    menuBackdrop: {
+      flex: 1,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+    },
+    menuSheet: {
+      backgroundColor: Colors.surface,
+      borderTopLeftRadius: 16,
+      borderTopRightRadius: 16,
+      paddingBottom: 32,
+      borderTopWidth: 0.5,
+      borderColor: Colors.border,
+    },
+    menuHandle: {
+      width: 36, height: 4, backgroundColor: Colors.border, borderRadius: 2,
+      alignSelf: 'center', marginTop: 10, marginBottom: 8,
+    },
+    menuItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 14,
+      paddingHorizontal: 20,
+      paddingVertical: 16,
+    },
+    menuItemText: {
+      fontSize: 16,
+      color: Colors.text,
+      fontWeight: '500',
+    },
+    menuDivider: {
+      height: 0.5,
+      backgroundColor: Colors.border,
+      marginHorizontal: 20,
+    },
+  });
+
   const router = useRouter();
   const { idUsuario, rol, logout } = useAuthStore();
 
   const [usuario, setUsuario] = useState<Usuario | null>(null);
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([]);
+  const [guardadas, setGuardadas] = useState<Publicacion[]>([]);
   const [seguidores, setSeguidores] = useState(0);
   const [seguidos, setSeguidos] = useState(0);
   const [loading, setLoading] = useState(true);
+  const [modalTipo, setModalTipo] = useState<'seguidores' | 'seguidos' | null>(null);
+  const [menuVisible, setMenuVisible] = useState(false);
 
   const cargar = useCallback(async () => {
     if (!idUsuario) return;
     try {
-      const [userRes, allPubs, contadores] = await Promise.all([
+      const requests: Promise<any>[] = [
         api.get<Usuario>(`/usuarios/${idUsuario}`),
-        publicacionesService.getFeed(),
         artistasService.getContadores(idUsuario),
-      ]);
+      ];
+      if (rol === 'ARTISTA' || rol === 'ADMIN') {
+        requests.push(publicacionesService.getFeed());
+      } else {
+        requests.push(publicacionesService.getGuardadas(idUsuario));
+      }
+      const [userRes, contadores, pubs] = await Promise.all(requests);
       setUsuario(userRes.data);
-      setPublicaciones(allPubs.filter((p) => p.usuario?.idUsuario === idUsuario));
       setSeguidores(contadores.seguidores);
       setSeguidos(contadores.seguidos);
+      if (rol === 'ARTISTA' || rol === 'ADMIN') {
+        setPublicaciones((pubs as Publicacion[]).filter((p) => p.usuario?.idUsuario === idUsuario));
+      } else {
+        setGuardadas(pubs as Publicacion[]);
+      }
     } catch {
       // silencioso
     } finally {
       setLoading(false);
     }
-  }, [idUsuario]);
+  }, [idUsuario, rol]);
 
-  useEffect(() => { cargar(); }, [cargar]);
+  useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
 
   const handleLogout = () => {
     Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
@@ -96,20 +329,37 @@ export default function PerfilScreen() {
           )}
 
           {/* Stats */}
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{publicaciones.length}</Text>
-              <Text style={styles.statLabel}>publicaciones</Text>
+          {rol === 'ARTISTA' || rol === 'ADMIN' ? (
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{publicaciones.length}</Text>
+                <Text style={styles.statLabel}>publicaciones</Text>
+              </View>
+              <TouchableOpacity style={styles.statItem} onPress={() => setModalTipo('seguidores')} activeOpacity={0.7}>
+                <Text style={styles.statNumber}>{seguidores}</Text>
+                <Text style={styles.statLabel}>seguidores</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.statItem} onPress={() => setModalTipo('seguidos')} activeOpacity={0.7}>
+                <Text style={styles.statNumber}>{seguidos}</Text>
+                <Text style={styles.statLabel}>seguidos</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{seguidores}</Text>
-              <Text style={styles.statLabel}>seguidores</Text>
+          ) : (
+            <View style={styles.statsRow}>
+              <View style={styles.statItem}>
+                <Text style={styles.statNumber}>{guardadas.length}</Text>
+                <Text style={styles.statLabel}>guardados</Text>
+              </View>
+              <TouchableOpacity style={styles.statItem} onPress={() => setModalTipo('seguidores')} activeOpacity={0.7}>
+                <Text style={styles.statNumber}>{seguidores}</Text>
+                <Text style={styles.statLabel}>seguidores</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.statItem} onPress={() => setModalTipo('seguidos')} activeOpacity={0.7}>
+                <Text style={styles.statNumber}>{seguidos}</Text>
+                <Text style={styles.statLabel}>seguidos</Text>
+              </TouchableOpacity>
             </View>
-            <View style={styles.statItem}>
-              <Text style={styles.statNumber}>{seguidos}</Text>
-              <Text style={styles.statLabel}>seguidos</Text>
-            </View>
-          </View>
+          )}
         </View>
 
         {/* Nombre + bio */}
@@ -128,9 +378,6 @@ export default function PerfilScreen() {
 
         {/* Botones de acción */}
         <View style={styles.actionButtons}>
-          <TouchableOpacity style={styles.editBtn} onPress={() => router.push('/perfil/editar')}>
-            <Text style={styles.editBtnText}>Editar perfil</Text>
-          </TouchableOpacity>
           {rol === 'ARTISTA' && (
             <TouchableOpacity
               style={styles.newPostBtn}
@@ -153,13 +400,13 @@ export default function PerfilScreen() {
         <Text style={styles.headerUsername}>
           {usuario?.nombre?.toLowerCase().replace(/\s+/g, '_') ?? 'mi_perfil'}
         </Text>
-        <TouchableOpacity onPress={handleLogout} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+        <TouchableOpacity onPress={() => setMenuVisible(true)} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name="menu-outline" size={28} color={Colors.text} />
         </TouchableOpacity>
       </View>
 
       <FlatList
-          data={publicaciones}
+          data={rol === 'ARTISTA' || rol === 'ADMIN' ? publicaciones : guardadas}
           keyExtractor={(item) => String(item.idPublicacion)}
           numColumns={3}
           columnWrapperStyle={styles.gridRow}
@@ -177,210 +424,74 @@ export default function PerfilScreen() {
             </TouchableOpacity>
           )}
           ListEmptyComponent={
-            <View style={styles.emptyGrid}>
-              <Ionicons name="camera-outline" size={56} color={Colors.textMuted} />
-              <Text style={styles.emptyGridTitle}>Sin publicaciones</Text>
-              <Text style={styles.emptyGridSub}>
-                {rol === 'ARTISTA'
-                  ? 'Comparte tu primer trabajo.'
-                  : 'Aún no hay publicaciones.'}
-              </Text>
-              {rol === 'ARTISTA' && (
+            rol === 'ARTISTA' || rol === 'ADMIN' ? (
+              <View style={styles.emptyGrid}>
+                <Ionicons name="camera-outline" size={56} color={Colors.textMuted} />
+                <Text style={styles.emptyGridTitle}>Sin publicaciones</Text>
+                <Text style={styles.emptyGridSub}>Comparte tu primer trabajo.</Text>
                 <TouchableOpacity
                   style={styles.uploadBtn}
                   onPress={() => router.push('/portfolio/nueva')}
                 >
                   <Text style={styles.uploadBtnText}>Subir foto</Text>
                 </TouchableOpacity>
-              )}
-            </View>
+              </View>
+            ) : (
+              <View style={styles.emptyGrid}>
+                <Ionicons name="ribbon-outline" size={56} color={Colors.textMuted} />
+                <Text style={styles.emptyGridTitle}>Sin guardados</Text>
+                <Text style={styles.emptyGridSub}>Guarda publicaciones que te gusten para verlas aquí.</Text>
+              </View>
+            )
           }
           showsVerticalScrollIndicator={false}
           ItemSeparatorComponent={() => <View style={{ height: GRID_GAP }} />}
         />
+
+      <SeguidoresModal
+        idUsuario={modalTipo && idUsuario ? idUsuario : null}
+        tipo={modalTipo ?? 'seguidores'}
+        onClose={() => setModalTipo(null)}
+        onNavigate={(id) => {
+          setModalTipo(null);
+          setTimeout(() => router.push(`/usuarios/${id}`), 300);
+        }}
+      />
+
+      <Modal visible={menuVisible} transparent animationType="fade" onRequestClose={() => setMenuVisible(false)}>
+        <TouchableOpacity style={styles.menuBackdrop} activeOpacity={1} onPress={() => setMenuVisible(false)} />
+        <View style={styles.menuSheet}>
+          <View style={styles.menuHandle} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => { setMenuVisible(false); router.push('/perfil/editar'); }}
+          >
+            <Ionicons name="create-outline" size={22} color={Colors.text} />
+            <Text style={styles.menuItemText}>Editar perfil</Text>
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => { setMenuVisible(false); router.push('/guardados'); }}
+          >
+            <Ionicons name="ribbon-outline" size={22} color={Colors.text} />
+            <Text style={styles.menuItemText}>Ver guardados</Text>
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => { setMenuVisible(false); router.push('/ajustes'); }}
+          >
+            <Ionicons name="settings-outline" size={22} color={Colors.text} />
+            <Text style={styles.menuItemText}>Ajustes</Text>
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); handleLogout(); }}>
+            <Ionicons name="log-out-outline" size={22} color={Colors.error} />
+            <Text style={[styles.menuItemText, { color: Colors.error }]}>Cerrar sesión</Text>
+          </TouchableOpacity>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-
-  /* Header */
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.border,
-  },
-  headerUsername: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.text,
-    letterSpacing: 0.2,
-  },
-  headerMenu: {
-    fontSize: 22,
-    color: Colors.text,
-  },
-
-  /* Bio section */
-  bioSection: {
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 12,
-    gap: 12,
-  },
-  avatarStatsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 16,
-  },
-  avatar: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    borderWidth: 2,
-    borderColor: Colors.primary,
-  },
-  avatarPlaceholder: {
-    width: 86,
-    height: 86,
-    borderRadius: 43,
-    backgroundColor: Colors.surfaceLight,
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderWidth: 2,
-    borderColor: Colors.primary,
-  },
-  avatarInitial: {
-    fontSize: 32,
-    fontWeight: '700',
-    color: Colors.primary,
-  },
-  statsRow: {
-    flex: 1,
-    flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  statItem: {
-    alignItems: 'center',
-    gap: 2,
-  },
-  statNumber: {
-    fontSize: 18,
-    fontWeight: '800',
-    color: Colors.text,
-  },
-  statLabel: {
-    fontSize: 11,
-    color: Colors.textSecondary,
-  },
-  nameBlock: {
-    gap: 4,
-  },
-  displayName: {
-    fontSize: 14,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  rolBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: Colors.primary + '22',
-    paddingHorizontal: 10,
-    paddingVertical: 3,
-    borderRadius: 6,
-  },
-  rolText: {
-    color: Colors.primary,
-    fontSize: 11,
-    fontWeight: '700',
-    letterSpacing: 1,
-  },
-  bio: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    lineHeight: 18,
-    marginTop: 2,
-  },
-  /* Botones */
-  actionButtons: {
-    flexDirection: 'row',
-    gap: 10,
-  },
-  editBtn: {
-    flex: 1,
-    backgroundColor: Colors.surfaceLight,
-    borderRadius: 8,
-    paddingVertical: 8,
-    alignItems: 'center',
-    borderWidth: 0.5,
-    borderColor: Colors.border,
-  },
-  editBtnText: {
-    color: Colors.text,
-    fontWeight: '600',
-    fontSize: 13,
-  },
-  newPostBtn: {
-    flex: 1,
-    backgroundColor: Colors.primary,
-    borderRadius: 8,
-    paddingVertical: 8,
-    alignItems: 'center',
-  },
-  newPostBtnText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 13,
-  },
-
-  divider: {
-    height: 0.5,
-    backgroundColor: Colors.border,
-  },
-
-  /* Grid */
-  gridRow: {
-    gap: GRID_GAP,
-  },
-  gridTile: {
-    width: GRID_TILE,
-    height: GRID_TILE,
-    backgroundColor: Colors.surface,
-  },
-
-  /* Empty grid */
-  emptyGrid: {
-    alignItems: 'center',
-    paddingVertical: 40,
-    paddingHorizontal: 32,
-    gap: 10,
-  },
-  emptyGridTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: Colors.text,
-  },
-  emptyGridSub: {
-    fontSize: 13,
-    color: Colors.textSecondary,
-    textAlign: 'center',
-    lineHeight: 18,
-  },
-  uploadBtn: {
-    marginTop: 8,
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  uploadBtnText: {
-    color: Colors.white,
-    fontWeight: '700',
-    fontSize: 14,
-  },
-});

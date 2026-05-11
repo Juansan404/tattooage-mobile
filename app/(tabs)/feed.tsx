@@ -15,13 +15,87 @@ import Ionicons from '@expo/vector-icons/Ionicons';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { notificacionesService } from '../../services/notificaciones.service';
 import { Publicacion } from '../../types/publicacion.types';
-import { Colors } from '../../constants/colors';
 import { useAuthStore } from '../../store/auth.store';
 import PostCard from '../../components/feed/PostCard';
+import { useColors } from '../../hooks/useColors';
 
 const PAGE_SIZE = 15;
 
 export default function FeedScreen() {
+  const Colors = useColors();
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      borderBottomWidth: 0.5,
+      borderBottomColor: Colors.border,
+    },
+    headerLogo: {
+      fontSize: 26,
+      fontWeight: '800',
+      color: Colors.text,
+      letterSpacing: -0.5,
+      fontStyle: 'italic',
+    },
+    headerLogoAccent: { color: Colors.primary },
+    headerIcons: { flexDirection: 'row', alignItems: 'center', gap: 18 },
+    headerIcon: { position: 'relative' },
+    badge: {
+      position: 'absolute',
+      top: -5, right: -6,
+      backgroundColor: '#e94560',
+      borderRadius: 9,
+      minWidth: 18, height: 18,
+      justifyContent: 'center', alignItems: 'center',
+      paddingHorizontal: 3,
+      borderWidth: 1.5, borderColor: Colors.background,
+    },
+    badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
+    separator: { height: 0.5, backgroundColor: Colors.border },
+    footerLoader: { paddingVertical: 20, alignItems: 'center' },
+    footerEnd: {
+      textAlign: 'center',
+      color: Colors.textMuted,
+      fontSize: 12,
+      paddingVertical: 20,
+      letterSpacing: 0.5,
+    },
+    emptyContainer: { flexGrow: 1 },
+    emptyInner: {
+      flex: 1,
+      justifyContent: 'center',
+      alignItems: 'center',
+      padding: 40,
+      marginTop: 60,
+    },
+    emptyTitle: {
+      color: Colors.text,
+      fontSize: 18,
+      fontWeight: '700',
+      textAlign: 'center',
+      marginBottom: 8,
+    },
+    emptySubtext: {
+      color: Colors.textSecondary,
+      fontSize: 14,
+      textAlign: 'center',
+      lineHeight: 20,
+    },
+    errorText: { color: Colors.error, textAlign: 'center', fontSize: 15, marginBottom: 16 },
+    retryBtn: {
+      backgroundColor: Colors.primary,
+      paddingHorizontal: 24,
+      paddingVertical: 10,
+      borderRadius: 8,
+    },
+    retryText: { color: Colors.white, fontWeight: '700', fontSize: 14 },
+  });
+
   const router = useRouter();
   const { idUsuario } = useAuthStore();
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([]);
@@ -171,76 +245,3 @@ export default function FeedScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.border,
-  },
-  headerLogo: {
-    fontSize: 26,
-    fontWeight: '800',
-    color: Colors.text,
-    letterSpacing: -0.5,
-    fontStyle: 'italic',
-  },
-  headerLogoAccent: { color: Colors.primary },
-  headerIcons: { flexDirection: 'row', alignItems: 'center', gap: 18 },
-  headerIcon: { position: 'relative' },
-  badge: {
-    position: 'absolute',
-    top: -5, right: -6,
-    backgroundColor: '#e94560',
-    borderRadius: 9,
-    minWidth: 18, height: 18,
-    justifyContent: 'center', alignItems: 'center',
-    paddingHorizontal: 3,
-    borderWidth: 1.5, borderColor: Colors.background,
-  },
-  badgeText: { color: '#fff', fontSize: 10, fontWeight: '800' },
-  separator: { height: 0.5, backgroundColor: Colors.border },
-  footerLoader: { paddingVertical: 20, alignItems: 'center' },
-  footerEnd: {
-    textAlign: 'center',
-    color: Colors.textMuted,
-    fontSize: 12,
-    paddingVertical: 20,
-    letterSpacing: 0.5,
-  },
-  emptyContainer: { flexGrow: 1 },
-  emptyInner: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 40,
-    marginTop: 60,
-  },
-  emptyTitle: {
-    color: Colors.text,
-    fontSize: 18,
-    fontWeight: '700',
-    textAlign: 'center',
-    marginBottom: 8,
-  },
-  emptySubtext: {
-    color: Colors.textSecondary,
-    fontSize: 14,
-    textAlign: 'center',
-    lineHeight: 20,
-  },
-  errorText: { color: Colors.error, textAlign: 'center', fontSize: 15, marginBottom: 16 },
-  retryBtn: {
-    backgroundColor: Colors.primary,
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    borderRadius: 8,
-  },
-  retryText: { color: Colors.white, fontWeight: '700', fontSize: 14 },
-});

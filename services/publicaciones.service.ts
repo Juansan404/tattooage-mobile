@@ -48,6 +48,11 @@ export const publicacionesService = {
     return response.data;
   },
 
+  async getComentariosCount(id: number): Promise<number> {
+    const response = await api.get<number>(`/comentarios/publicacion/${id}/count`);
+    return response.data;
+  },
+
   async comentar(idPublicacion: number, idUsuario: number, contenido: string): Promise<Comentario> {
     const response = await api.post<Comentario>('/comentarios', {
       publicacion: { idPublicacion },
@@ -59,5 +64,20 @@ export const publicacionesService = {
 
   async eliminarComentario(idComentario: number): Promise<void> {
     await api.delete(`/comentarios/${idComentario}`);
+  },
+
+  async toggleGuardar(idPublicacion: number, idUsuario: number): Promise<{ guardado: boolean }> {
+    const response = await api.post(`/publicaciones/${idPublicacion}/guardar`, { idUsuario });
+    return response.data;
+  },
+
+  async getGuardadoStatus(idPublicacion: number, idUsuario: number): Promise<{ guardado: boolean }> {
+    const response = await api.get(`/publicaciones/${idPublicacion}/guardado/${idUsuario}`);
+    return response.data;
+  },
+
+  async getGuardadas(idUsuario: number): Promise<Publicacion[]> {
+    const response = await api.get<Publicacion[]>(`/publicaciones/guardadas/${idUsuario}`);
+    return response.data;
   },
 };

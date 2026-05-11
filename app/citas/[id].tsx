@@ -434,29 +434,21 @@ export default function DetalleCitaScreen() {
                 )}
               </TouchableOpacity>
 
-              {/* Cambiar estado */}
-              <Text style={styles.sectionTitle}>Cambiar estado</Text>
-              <View style={styles.stateRow}>
-                {cita.estado === 'Pendiente' && (
-                  <TouchableOpacity
-                    style={[styles.stateBtn, { backgroundColor: Colors.success + '22', borderColor: Colors.success }]}
-                    onPress={() => handleCambiarEstado('Confirmada')}
-                  >
-                    <Text style={[styles.stateBtnText, { color: Colors.success }]}>Confirmar</Text>
-                  </TouchableOpacity>
-                )}
-                {(cita.estado === 'Pendiente' || cita.estado === 'Confirmada') && (
+              {/* Marcar como completada — solo artista, solo tras confirmación */}
+              {cita.estado === 'Confirmada' && (
+                <>
+                  <Text style={styles.sectionTitle}>Finalizar</Text>
                   <TouchableOpacity
                     style={[styles.stateBtn, { backgroundColor: Colors.textSecondary + '22', borderColor: Colors.textSecondary }]}
                     onPress={() => handleCambiarEstado('Completada')}
                   >
-                    <Text style={[styles.stateBtnText, { color: Colors.textSecondary }]}>Completada</Text>
+                    <Text style={[styles.stateBtnText, { color: Colors.textSecondary }]}>Marcar como completada</Text>
                   </TouchableOpacity>
-                )}
-              </View>
+                </>
+              )}
             </>
           ) : (
-            /* Vista solo lectura (cliente o cita cerrada) */
+            /* Vista cliente */
             <>
               <View style={styles.card}>
                 <Text style={styles.cardLabel}>Fecha</Text>
@@ -485,6 +477,16 @@ export default function DetalleCitaScreen() {
                   {cita.precio && <Text style={styles.cardRow}>Precio: {cita.precio}€</Text>}
                   {cita.notas && <Text style={styles.cardRow}>{cita.notas}</Text>}
                 </View>
+              )}
+
+              {/* Confirmar — solo cliente, solo cuando está Pendiente */}
+              {cita.estado === 'Pendiente' && (
+                <TouchableOpacity
+                  style={[styles.stateBtn, { backgroundColor: Colors.success + '22', borderColor: Colors.success }]}
+                  onPress={() => handleCambiarEstado('Confirmada')}
+                >
+                  <Text style={[styles.stateBtnText, { color: Colors.success }]}>Confirmar cita</Text>
+                </TouchableOpacity>
               )}
             </>
           )}

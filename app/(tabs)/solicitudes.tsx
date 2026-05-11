@@ -7,7 +7,9 @@ import {
   ActivityIndicator,
   TouchableOpacity,
   RefreshControl,
+  Alert,
 } from 'react-native';
+import Ionicons from '@expo/vector-icons/Ionicons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import { solicitudesService } from '../../services/solicitudes.service';
@@ -205,9 +207,24 @@ export default function SolicitudesScreen() {
   return (
     <SafeAreaView style={styles.container}>
       <View style={styles.header}>
-        <Text style={styles.title}>
-          {rol === 'ARTISTA' ? 'Agenda' : 'Mis citas'}
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Text style={styles.title}>
+            {rol === 'ARTISTA' ? 'Agenda' : 'Mis citas'}
+          </Text>
+          <TouchableOpacity
+            onPress={() =>
+              Alert.alert(
+                'Cómo funciona',
+                rol === 'ARTISTA'
+                  ? '1. El cliente envía una solicitud de cita.\n\n2. Tú la aceptas o rechazas desde "Solicitudes".\n\n3. Si la aceptas, puedes programar la cita con fecha, hora y detalles desde la solicitud.\n\n4. El cliente confirma la cita.\n\n5. Tras la sesión, tú la marcas como completada.'
+                  : '1. Envía una solicitud a un artista desde su perfil o desde "+ Nueva".\n\n2. El artista la acepta y propone una fecha y hora.\n\n3. Tú confirmas la cita en la pestaña "Citas".\n\n4. Si necesitas cancelar, puedes hacerlo antes de que se complete.'
+              )
+            }
+            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+          >
+            <Ionicons name="information-circle-outline" size={20} color={Colors.textMuted} />
+          </TouchableOpacity>
+        </View>
         {rol === 'CLIENTE' && activeTab === 'solicitudes' && (
           <TouchableOpacity
             style={styles.newBtn}

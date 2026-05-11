@@ -20,13 +20,89 @@ import { conversacionesService } from '../../services/conversaciones.service';
 import api from '../../services/api';
 import { Conversacion, MensajeDirecto } from '../../types/conversacion.types';
 import { Usuario } from '../../types/usuario.types';
-import { Colors } from '../../constants/colors';
 import { useAuthStore } from '../../store/auth.store';
 import { API_BASE_URL } from '../../constants/config';
+import { useColors } from '../../hooks/useColors';
 
 const WS_URL = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://').replace('/api', '/ws');
 
 export default function ChatDirectoScreen() {
+  const Colors = useColors();
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+      borderBottomWidth: 1,
+      borderBottomColor: Colors.border,
+      gap: 10,
+    },
+    headerUser: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
+    headerAvatar: { width: 38, height: 38, borderRadius: 19 },
+    headerAvatarPlaceholder: {
+      width: 38, height: 38, borderRadius: 19,
+      backgroundColor: Colors.surfaceLight,
+      justifyContent: 'center', alignItems: 'center',
+    },
+    headerAvatarInitial: { fontSize: 15, fontWeight: '700', color: Colors.primary },
+    headerName: { fontSize: 15, fontWeight: '700', color: Colors.text },
+    headerRol: { fontSize: 11, color: Colors.textMuted },
+    wsBadge: { width: 10, height: 10, borderRadius: 5, padding: 0 },
+    wsDot: { width: 10, height: 10, borderRadius: 5 },
+    chatContent: { padding: 12, gap: 8, paddingBottom: 16 },
+    bubble: {
+      maxWidth: '78%',
+      padding: 10,
+      borderRadius: 16,
+      gap: 2,
+    },
+    bubbleMio: {
+      backgroundColor: Colors.primary,
+      alignSelf: 'flex-end',
+      borderBottomRightRadius: 4,
+    },
+    bubbleOtro: {
+      backgroundColor: Colors.surface,
+      alignSelf: 'flex-start',
+      borderBottomLeftRadius: 4,
+    },
+    bubbleText: { fontSize: 14, color: Colors.text },
+    bubbleTextMio: { color: Colors.white },
+    bubbleTime: { fontSize: 10, color: Colors.textMuted, alignSelf: 'flex-end' },
+    bubbleTimeMio: { color: 'rgba(255,255,255,0.6)' },
+    bubbleLeido: { fontSize: 10 },
+    bubbleImage: { width: 200, height: 200, borderRadius: 10, marginBottom: 2 },
+    emptyChat: { textAlign: 'center', color: Colors.textMuted, fontSize: 14, padding: 32 },
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      padding: 10,
+      gap: 8,
+      borderTopWidth: 1,
+      borderTopColor: Colors.border,
+      backgroundColor: Colors.surface,
+    },
+    input: {
+      flex: 1,
+      backgroundColor: Colors.surfaceLight,
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      color: Colors.text,
+      fontSize: 14,
+      maxHeight: 100,
+    },
+    sendBtn: {
+      backgroundColor: Colors.primary,
+      width: 40, height: 40, borderRadius: 20,
+      justifyContent: 'center', alignItems: 'center',
+    },
+    sendBtnDisabled: { opacity: 0.5 },
+  });
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { idUsuario } = useAuthStore();
@@ -65,19 +141,35 @@ export default function ChatDirectoScreen() {
     const client = new Client({
       brokerURL: WS_URL,
       reconnectDelay: 5000,
+      // Necesario para React Native: el WebSocket nativo usa frames binarios
+      forceBinaryWSFrames: true,
+      appendMissingNULLonIncoming: true,
+      // Heartbeat para mantener conexión estable en móvil
+      heartbeatIncoming: 0,
+      heartbeatOutgoing: 20000,
       onConnect: () => {
         setConectado(true);
         client.subscribe(`/topic/conversacion/${convId}`, (frame) => {
-          const msg: MensajeDirecto = JSON.parse(frame.body);
-          setMensajes((prev) => {
-            if (prev.some((m) => m.idMensaje === msg.idMensaje)) return prev;
-            return [...prev, msg];
-          });
-          setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+          try {
+            const msg: MensajeDirecto = JSON.parse(frame.body);
+            setMensajes((prev) => {
+              // Si ya existe con el mismo id real, no duplicar
+              if (prev.some((m) => m.idMensaje === msg.idMensaje)) return prev;
+              // Reemplazar el mensaje temporal del emisor (id negativo, mismo contenido y remitente)
+              const sinTemporal = prev.filter(
+                (m) => !(m.idMensaje < 0 && m.contenido === msg.contenido && m.remitente?.idUsuario === msg.remitente?.idUsuario)
+              );
+              return [...sinTemporal, msg];
+            });
+            setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 100);
+          } catch {
+            // frame mal formado, ignorar
+          }
         });
       },
       onDisconnect: () => setConectado(false),
       onStompError: () => setConectado(false),
+      onWebSocketError: () => setConectado(false),
     });
     client.activate();
     stompClient.current = client;
@@ -100,6 +192,19 @@ export default function ChatDirectoScreen() {
     setNuevoMensaje('');
 
     if (stompClient.current?.connected) {
+      // Añadir el mensaje optimistamente con id temporal negativo
+      const tempId = -Date.now();
+      const tempMsg: MensajeDirecto = {
+        idMensaje: tempId,
+        contenido: texto,
+        creadoEn: new Date().toISOString(),
+        leido: false,
+        remitente: { idUsuario } as any,
+        conversacion: { idConversacion: convId } as any,
+      };
+      setMensajes((prev) => [...prev, tempMsg]);
+      setTimeout(() => listRef.current?.scrollToEnd({ animated: true }), 50);
+
       stompClient.current.publish({
         destination: `/app/conversacion/${convId}/mensaje`,
         body: JSON.stringify({ idRemitente: idUsuario, contenido: texto }),
@@ -126,7 +231,10 @@ export default function ChatDirectoScreen() {
 
   return (
     <SafeAreaView style={styles.container}>
-      <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      >
         {/* Header */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => router.back()}>
@@ -164,20 +272,22 @@ export default function ChatDirectoScreen() {
           keyExtractor={(item) => String(item.idMensaje)}
           renderItem={({ item }) => {
             const esMio = item.remitente?.idUsuario === idUsuario;
+            const esImagen = /^https?:\/\/.+\.(jpg|jpeg|png|gif|webp)(\?.*)?$/i.test(item.contenido ?? '');
+            const hora = item.creadoEn
+              ? new Date(item.creadoEn).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
+              : '';
             return (
-              <View style={[styles.bubble, esMio ? styles.bubbleMio : styles.bubbleOtro]}>
-                <Text style={[styles.bubbleText, esMio && styles.bubbleTextMio]}>
-                  {item.contenido}
-                </Text>
-                <Text style={styles.bubbleTime}>
-                  {new Date(item.creadoEn).toLocaleTimeString('es-ES', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })}
-                  {esMio && (
-                    <Text style={styles.bubbleLeido}>{item.leido ? '  ✓✓' : '  ✓'}</Text>
-                  )}
-                </Text>
+              <View style={[styles.bubble, esMio ? styles.bubbleMio : styles.bubbleOtro, esImagen && { padding: 4 }]}>
+                {esImagen ? (
+                  <Image source={{ uri: item.contenido }} style={styles.bubbleImage} resizeMode="cover" />
+                ) : (
+                  <Text style={[styles.bubbleText, esMio && styles.bubbleTextMio]}>
+                    {item.contenido}
+                  </Text>
+                )}
+                {hora ? (
+                  <Text style={[styles.bubbleTime, esMio && styles.bubbleTimeMio]}>{hora}</Text>
+                ) : null}
               </View>
             );
           }}
@@ -213,76 +323,3 @@ export default function ChatDirectoScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 12,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    gap: 10,
-  },
-  headerUser: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 10 },
-  headerAvatar: { width: 38, height: 38, borderRadius: 19 },
-  headerAvatarPlaceholder: {
-    width: 38, height: 38, borderRadius: 19,
-    backgroundColor: Colors.surfaceLight,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  headerAvatarInitial: { fontSize: 15, fontWeight: '700', color: Colors.primary },
-  headerName: { fontSize: 15, fontWeight: '700', color: Colors.text },
-  headerRol: { fontSize: 11, color: Colors.textMuted },
-  wsBadge: { width: 10, height: 10, borderRadius: 5, padding: 0 },
-  wsDot: { width: 10, height: 10, borderRadius: 5 },
-  chatContent: { padding: 12, gap: 8, paddingBottom: 16 },
-  bubble: {
-    maxWidth: '78%',
-    padding: 10,
-    borderRadius: 16,
-    gap: 2,
-  },
-  bubbleMio: {
-    backgroundColor: Colors.primary,
-    alignSelf: 'flex-end',
-    borderBottomRightRadius: 4,
-  },
-  bubbleOtro: {
-    backgroundColor: Colors.surface,
-    alignSelf: 'flex-start',
-    borderBottomLeftRadius: 4,
-  },
-  bubbleText: { fontSize: 14, color: Colors.text },
-  bubbleTextMio: { color: Colors.white },
-  bubbleTime: { fontSize: 10, color: Colors.textMuted, alignSelf: 'flex-end' },
-  bubbleLeido: { fontSize: 10 },
-  emptyChat: { textAlign: 'center', color: Colors.textMuted, fontSize: 14, padding: 32 },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    padding: 10,
-    gap: 8,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: Colors.surfaceLight,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: Colors.text,
-    fontSize: 14,
-    maxHeight: 100,
-  },
-  sendBtn: {
-    backgroundColor: Colors.primary,
-    width: 40, height: 40, borderRadius: 20,
-    justifyContent: 'center', alignItems: 'center',
-  },
-  sendBtnDisabled: { opacity: 0.5 },
-});

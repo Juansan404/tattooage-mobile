@@ -210,6 +210,12 @@ export default function PerfilScreen() {
       fontWeight: '700',
       fontSize: 14,
     },
+    gridTileWrapper: { position: 'relative' },
+    gridTileMenuBtn: {
+      position: 'absolute', top: 4, right: 4,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      borderRadius: 10, padding: 3,
+    },
 
     /* Menú */
     menuBackdrop: {
@@ -288,6 +294,36 @@ export default function PerfilScreen() {
   }, [idUsuario, rol]);
 
   useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
+
+  const handleEliminarPost = (item: Publicacion) => {
+    Alert.alert(
+      'Eliminar publicación',
+      '¿Seguro que quieres eliminar esta publicación? Esta acción no se puede deshacer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await publicacionesService.eliminar(item.idPublicacion);
+              setPublicaciones((prev) => prev.filter((p) => p.idPublicacion !== item.idPublicacion));
+            } catch {
+              Alert.alert('Error', 'No se pudo eliminar la publicación.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleMenuPost = (item: Publicacion) => {
+    Alert.alert('Publicación', '¿Qué quieres hacer?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Editar', onPress: () => router.push(`/portfolio/editar/${item.idPublicacion}`) },
+      { text: 'Eliminar', style: 'destructive', onPress: () => handleEliminarPost(item) },
+    ]);
+  };
 
   const handleLogout = () => {
     Alert.alert('Cerrar sesión', '¿Seguro que quieres salir?', [
@@ -412,16 +448,23 @@ export default function PerfilScreen() {
           columnWrapperStyle={styles.gridRow}
           ListHeaderComponent={<ListHeader />}
           renderItem={({ item }) => (
-            <TouchableOpacity
-              activeOpacity={0.85}
-              onPress={() => router.push(`/publicaciones/${item.idPublicacion}`)}
-            >
-              <Image
-                source={{ uri: item.fotoUrl }}
-                style={styles.gridTile}
-                resizeMode="cover"
-              />
-            </TouchableOpacity>
+            <View style={styles.gridTileWrapper}>
+              <TouchableOpacity
+                activeOpacity={0.85}
+                onPress={() => router.push(`/publicaciones/${item.idPublicacion}`)}
+              >
+                <Image source={{ uri: item.fotoUrl }} style={styles.gridTile} resizeMode="cover" />
+              </TouchableOpacity>
+              {(rol === 'ARTISTA' || rol === 'ADMIN') && (
+                <TouchableOpacity
+                  style={styles.gridTileMenuBtn}
+                  onPress={() => handleMenuPost(item)}
+                  hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+                >
+                  <Ionicons name="ellipsis-horizontal" size={14} color="#fff" />
+                </TouchableOpacity>
+              )}
+            </View>
           )}
           ListEmptyComponent={
             rol === 'ARTISTA' || rol === 'ADMIN' ? (

@@ -278,7 +278,8 @@ export default function PostCard({ publicacion, onLike }: Props) {
     setEnviando(destinatario.idUsuario);
     try {
       const conv = await conversacionesService.findOrCreate(idUsuario, destinatario.idUsuario);
-      await conversacionesService.enviarMensaje(conv.idConversacion, idUsuario, fotoUrl ?? '');
+      const payload = JSON.stringify({ type: 'post', id: idPublicacion, url: fotoUrl, autor: usuario?.nombre ?? '' });
+      await conversacionesService.enviarMensaje(conv.idConversacion, idUsuario, payload);
       setMencionVisible(false);
       Alert.alert('Enviado', `Imagen compartida con ${destinatario.nombre}.`);
     } catch {

@@ -13,6 +13,7 @@ import {
   Image,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { publicacionesService } from '../../../services/publicaciones.service';
@@ -35,8 +36,16 @@ export default function EditarPublicacionScreen() {
     title: { fontSize: 16, fontWeight: '700', color: Colors.text },
     saveText: { color: Colors.primary, fontSize: 15, fontWeight: '700', width: 70, textAlign: 'right' },
     form: { padding: 16, gap: 6 },
+    imageWrapper: { position: 'relative', marginBottom: 8 },
     imagePreview: { width: '100%', height: 280, borderRadius: 12, backgroundColor: Colors.surface },
-    imageNote: { fontSize: 12, color: Colors.textMuted, textAlign: 'center', marginTop: 6, marginBottom: 8 },
+    changeImageBtn: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      gap: 6,
+      paddingVertical: 8,
+    },
+    changeImageText: { color: Colors.primary, fontSize: 14, fontWeight: '600' },
     label: {
       fontSize: 12,
       color: Colors.textSecondary,
@@ -76,6 +85,8 @@ export default function EditarPublicacionScreen() {
   const [descripcion, setDescripcion] = useState('');
   const [estilo, setEstilo] = useState('');
   const [zonaCuerpo, setZonaCuerpo] = useState('');
+  const [nuevaImagenBase64, setNuevaImagenBase64] = useState<string | null>(null);
+  const [nuevaImagenUri, setNuevaImagenUri] = useState<string | null>(null);
   const [loadingData, setLoadingData] = useState(true);
   const [saving, setSaving] = useState(false);
 
@@ -94,6 +105,26 @@ export default function EditarPublicacionScreen() {
       .finally(() => setLoadingData(false));
   }, [id]);
 
+  const seleccionarImagen = async () => {
+    const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (!permiso.granted) {
+      Alert.alert('Permiso necesario', 'Necesitamos acceso a tu galería para cambiar la foto.');
+      return;
+    }
+    const resultado = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.7,
+      base64: true,
+    });
+    if (!resultado.canceled && resultado.assets[0]) {
+      const asset = resultado.assets[0];
+      setNuevaImagenUri(asset.uri);
+      setNuevaImagenBase64(`data:image/jpeg;base64,${asset.base64}`);
+    }
+  };
+
   const handleGuardar = async () => {
     if (saving) return;
     setSaving(true);
@@ -102,6 +133,7 @@ export default function EditarPublicacionScreen() {
         descripcion: descripcion.trim() || undefined,
         estilo: estilo.trim() || undefined,
         zonaCuerpo: zonaCuerpo.trim() || undefined,
+        ...(nuevaImagenBase64 ? { fotoUrl: nuevaImagenBase64 } : {}),
       });
       Alert.alert('Guardado', 'La publicación ha sido actualizada.', [
         { text: 'OK', onPress: () => router.back() },
@@ -122,6 +154,8 @@ export default function EditarPublicacionScreen() {
       </SafeAreaView>
     );
   }
+
+  const imagenMostrada = nuevaImagenUri ?? publicacion?.fotoUrl;
 
   return (
     <SafeAreaView style={styles.container}>
@@ -144,12 +178,18 @@ export default function EditarPublicacionScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-          {publicacion?.fotoUrl && (
-            <>
-              <Image source={{ uri: publicacion.fotoUrl }} style={styles.imagePreview} resizeMode="cover" />
-              <Text style={styles.imageNote}>La imagen no se puede cambiar desde aquí</Text>
-            </>
+          {imagenMostrada && (
+            <View style={styles.imageWrapper}>
+              <Image source={{ uri: imagenMostrada }} style={styles.imagePreview} resizeMode="cover" />
+            </View>
           )}
+
+          <TouchableOpacity style={styles.changeImageBtn} onPress={seleccionarImagen} activeOpacity={0.7}>
+            <Ionicons name="swap-horizontal-outline" size={16} color={Colors.primary} />
+            <Text style={styles.changeImageText}>
+              {nuevaImagenUri ? 'Cambiar imagen de nuevo' : 'Cambiar imagen'}
+            </Text>
+          </TouchableOpacity>
 
           <Text style={styles.label}>Descripción</Text>
           <TextInput

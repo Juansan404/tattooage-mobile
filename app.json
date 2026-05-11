@@ -33,7 +33,21 @@
     },
     "plugins": [
       "expo-router",
-      "@react-native-community/datetimepicker"
+      "@react-native-community/datetimepicker",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "TattooAge necesita la cámara para el modo de previsualización AR."
+        }
+      ],
+      [
+        "expo-media-library",
+        {
+          "photosPermission": "TattooAge necesita acceso a tu galería para guardar fotos.",
+          "savePhotosPermission": "TattooAge necesita permiso para guardar fotos en tu galería.",
+          "isAccessMediaLocationEnabled": false
+        }
+      ]
     ]
   }
 }

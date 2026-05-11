@@ -26,7 +26,7 @@ export default function ARScreen() {
   const router = useRouter();
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
-  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions();
+  const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions({ writeOnly: true });
 
   const [fotoUrl, setFotoUrl] = useState<string | null>(null);
   const [loadingPub, setLoadingPub] = useState(true);

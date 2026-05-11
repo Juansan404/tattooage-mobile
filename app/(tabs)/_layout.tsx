@@ -1,12 +1,15 @@
 import { Tabs, useRouter } from 'expo-router';
 import { useEffect } from 'react';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import { Colors } from '../../constants/colors';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuthStore } from '../../store/auth.store';
+import { useColors } from '../../hooks/useColors';
 
 type IoniconName = React.ComponentProps<typeof Ionicons>['name'];
 
 export default function TabsLayout() {
+  const Colors = useColors();
+  const insets = useSafeAreaInsets();
   const { isAuthenticated, isLoading } = useAuthStore();
   const router = useRouter();
 
@@ -24,9 +27,9 @@ export default function TabsLayout() {
           backgroundColor: Colors.surface,
           borderTopColor: Colors.border,
           borderTopWidth: 1,
-          paddingBottom: 6,
           paddingTop: 6,
-          height: 60,
+          paddingBottom: insets.bottom > 0 ? insets.bottom : 8,
+          height: 54 + (insets.bottom > 0 ? insets.bottom : 8),
         },
         tabBarActiveTintColor: Colors.primary,
         tabBarInactiveTintColor: Colors.textMuted,
@@ -58,20 +61,15 @@ export default function TabsLayout() {
       <Tabs.Screen
         name="solicitudes"
         options={{
-          title: 'Solicitudes',
+          title: 'Solicitudes/Citas',
           tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'mail' : 'mail-outline'} size={24} color={color} />
+            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={24} color={color} />
           ),
         }}
       />
       <Tabs.Screen
         name="citas"
-        options={{
-          title: 'Citas',
-          tabBarIcon: ({ color, focused }) => (
-            <Ionicons name={focused ? 'calendar' : 'calendar-outline'} size={24} color={color} />
-          ),
-        }}
+        options={{ href: null }}
       />
       <Tabs.Screen
         name="perfil"

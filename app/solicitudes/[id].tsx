@@ -18,20 +18,150 @@ import { Client } from '@stomp/stompjs';
 import { solicitudesService } from '../../services/solicitudes.service';
 import { mensajesService } from '../../services/mensajes.service';
 import { SolicitudCita, Mensaje, EstadoSolicitud } from '../../types/solicitud.types';
-import { Colors } from '../../constants/colors';
 import { useAuthStore } from '../../store/auth.store';
 import { API_BASE_URL } from '../../constants/config';
+import { useColors } from '../../hooks/useColors';
 
 const WS_URL = API_BASE_URL.replace('https://', 'wss://').replace('http://', 'ws://').replace('/api', '/ws');
 
-const ESTADO_COLORS: Record<EstadoSolicitud, string> = {
-  Pendiente: Colors.warning,
-  Aceptada: Colors.success,
-  Rechazada: Colors.error,
-  Completada: Colors.textSecondary,
-};
-
 export default function DetalleSolicitudScreen() {
+  const Colors = useColors();
+  const ESTADO_COLORS: Record<EstadoSolicitud, string> = {
+    Pendiente: Colors.warning,
+    Aceptada: Colors.success,
+    Rechazada: Colors.error,
+    Completada: Colors.textSecondary,
+  };
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+    header: {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 1,
+      borderBottomColor: Colors.border,
+    },
+    wsBadge: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 8,
+      gap: 5,
+    },
+    wsDot: { width: 6, height: 6, borderRadius: 3 },
+    wsText: { fontSize: 11, fontWeight: '600' },
+    estadoBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
+    estadoText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
+    infoBox: {
+      backgroundColor: Colors.surface,
+      padding: 14,
+      borderBottomWidth: 1,
+      borderBottomColor: Colors.border,
+      gap: 6,
+    },
+    infoTitle: { fontSize: 14, fontWeight: '700', color: Colors.text },
+    infoDesc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
+    infoTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
+    infoTag: {
+      backgroundColor: Colors.surfaceLight,
+      paddingHorizontal: 8,
+      paddingVertical: 3,
+      borderRadius: 6,
+      fontSize: 12,
+      color: Colors.textSecondary,
+    },
+    artActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
+    scheduleBtn: {
+      backgroundColor: Colors.primary + '22',
+      borderWidth: 1,
+      borderColor: Colors.primary,
+      paddingVertical: 8,
+      borderRadius: 8,
+      alignItems: 'center',
+      marginTop: 4,
+    },
+    scheduleBtnText: { color: Colors.primary, fontWeight: '700', fontSize: 13 },
+    acceptBtn: {
+      flex: 1,
+      backgroundColor: Colors.success + '22',
+      borderWidth: 1,
+      borderColor: Colors.success,
+      paddingVertical: 8,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    acceptBtnText: { color: Colors.success, fontWeight: '700', fontSize: 13 },
+    rejectBtn: {
+      flex: 1,
+      backgroundColor: Colors.error + '22',
+      borderWidth: 1,
+      borderColor: Colors.error,
+      paddingVertical: 8,
+      borderRadius: 8,
+      alignItems: 'center',
+    },
+    rejectBtnText: { color: Colors.error, fontWeight: '700', fontSize: 13 },
+    chatContent: { padding: 12, gap: 8, paddingBottom: 16 },
+    bubble: {
+      maxWidth: '78%',
+      padding: 10,
+      borderRadius: 14,
+      gap: 3,
+    },
+    bubbleMio: {
+      backgroundColor: Colors.primary,
+      alignSelf: 'flex-end',
+      borderBottomRightRadius: 4,
+    },
+    bubbleOtro: {
+      backgroundColor: Colors.surface,
+      alignSelf: 'flex-start',
+      borderBottomLeftRadius: 4,
+    },
+    bubbleAuthor: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary },
+    bubbleText: { fontSize: 14, color: Colors.text },
+    bubbleTextMio: { color: Colors.white },
+    bubbleTime: { fontSize: 10, color: Colors.textMuted, alignSelf: 'flex-end' },
+    emptyChat: {
+      textAlign: 'center',
+      color: Colors.textMuted,
+      fontSize: 14,
+      padding: 32,
+    },
+    inputRow: {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      padding: 10,
+      gap: 8,
+      borderTopWidth: 1,
+      borderTopColor: Colors.border,
+      backgroundColor: Colors.surface,
+    },
+    input: {
+      flex: 1,
+      backgroundColor: Colors.surfaceLight,
+      borderRadius: 20,
+      paddingHorizontal: 14,
+      paddingVertical: 10,
+      color: Colors.text,
+      fontSize: 14,
+      maxHeight: 100,
+    },
+    sendBtn: {
+      backgroundColor: Colors.primary,
+      width: 40,
+      height: 40,
+      borderRadius: 20,
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
+    sendBtnDisabled: { opacity: 0.5 },
+  });
+
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { idUsuario, rol } = useAuthStore();
@@ -205,6 +335,18 @@ export default function DetalleSolicitudScreen() {
               </TouchableOpacity>
             </View>
           )}
+          {esArtista && solicitud.estado === 'Aceptada' && (
+            <TouchableOpacity
+              style={styles.scheduleBtn}
+              onPress={() =>
+                router.push(
+                  `/citas/nueva?solicitudId=${solicitud.idSolicitud}&clienteId=${solicitud.cliente?.idUsuario}&artistaId=${solicitud.artista?.idUsuario}`
+                )
+              }
+            >
+              <Text style={styles.scheduleBtnText}>📅 Programar cita</Text>
+            </TouchableOpacity>
+          )}
         </View>
 
         {/* Chat */}
@@ -264,123 +406,3 @@ export default function DetalleSolicitudScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-  },
-  wsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 8,
-    gap: 5,
-  },
-  wsDot: { width: 6, height: 6, borderRadius: 3 },
-  wsText: { fontSize: 11, fontWeight: '600' },
-  estadoBadge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
-  estadoText: { fontSize: 12, fontWeight: '700', letterSpacing: 0.5 },
-  infoBox: {
-    backgroundColor: Colors.surface,
-    padding: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border,
-    gap: 6,
-  },
-  infoTitle: { fontSize: 14, fontWeight: '700', color: Colors.text },
-  infoDesc: { fontSize: 13, color: Colors.textSecondary, lineHeight: 18 },
-  infoTagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
-  infoTag: {
-    backgroundColor: Colors.surfaceLight,
-    paddingHorizontal: 8,
-    paddingVertical: 3,
-    borderRadius: 6,
-    fontSize: 12,
-    color: Colors.textSecondary,
-  },
-  artActions: { flexDirection: 'row', gap: 10, marginTop: 4 },
-  acceptBtn: {
-    flex: 1,
-    backgroundColor: Colors.success + '22',
-    borderWidth: 1,
-    borderColor: Colors.success,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  acceptBtnText: { color: Colors.success, fontWeight: '700', fontSize: 13 },
-  rejectBtn: {
-    flex: 1,
-    backgroundColor: Colors.error + '22',
-    borderWidth: 1,
-    borderColor: Colors.error,
-    paddingVertical: 8,
-    borderRadius: 8,
-    alignItems: 'center',
-  },
-  rejectBtnText: { color: Colors.error, fontWeight: '700', fontSize: 13 },
-  chatContent: { padding: 12, gap: 8, paddingBottom: 16 },
-  bubble: {
-    maxWidth: '78%',
-    padding: 10,
-    borderRadius: 14,
-    gap: 3,
-  },
-  bubbleMio: {
-    backgroundColor: Colors.primary,
-    alignSelf: 'flex-end',
-    borderBottomRightRadius: 4,
-  },
-  bubbleOtro: {
-    backgroundColor: Colors.surface,
-    alignSelf: 'flex-start',
-    borderBottomLeftRadius: 4,
-  },
-  bubbleAuthor: { fontSize: 11, fontWeight: '700', color: Colors.textSecondary },
-  bubbleText: { fontSize: 14, color: Colors.text },
-  bubbleTextMio: { color: Colors.white },
-  bubbleTime: { fontSize: 10, color: Colors.textMuted, alignSelf: 'flex-end' },
-  emptyChat: {
-    textAlign: 'center',
-    color: Colors.textMuted,
-    fontSize: 14,
-    padding: 32,
-  },
-  inputRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    padding: 10,
-    gap: 8,
-    borderTopWidth: 1,
-    borderTopColor: Colors.border,
-    backgroundColor: Colors.surface,
-  },
-  input: {
-    flex: 1,
-    backgroundColor: Colors.surfaceLight,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 10,
-    color: Colors.text,
-    fontSize: 14,
-    maxHeight: 100,
-  },
-  sendBtn: {
-    backgroundColor: Colors.primary,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  sendBtnDisabled: { opacity: 0.5 },
-});

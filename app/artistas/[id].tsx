@@ -14,6 +14,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { artistasService } from '../../services/artistas.service';
+import { publicacionesService } from '../../services/publicaciones.service';
 import { Usuario, PerfilArtista } from '../../types/usuario.types';
 import { Publicacion } from '../../types/publicacion.types';
 import { useAuthStore } from '../../store/auth.store';
@@ -121,6 +122,12 @@ export default function PerfilArtistaScreen() {
     emptyGrid: { alignItems: 'center', paddingVertical: 40, paddingHorizontal: 32, gap: 10 },
     emptyGridTitle: { fontSize: 18, fontWeight: '700', color: Colors.text },
     emptyGridSub: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', lineHeight: 18 },
+    gridTileWrapper: { position: 'relative' },
+    gridTileMenuBtn: {
+      position: 'absolute', top: 4, right: 4,
+      backgroundColor: 'rgba(0,0,0,0.45)',
+      borderRadius: 10, padding: 3,
+    },
   });
 
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -168,6 +175,36 @@ export default function PerfilArtistaScreen() {
   }, [id]);
 
   useEffect(() => { cargar(); }, [cargar]);
+
+  const handleEliminarPost = (item: Publicacion) => {
+    Alert.alert(
+      'Eliminar publicación',
+      '¿Seguro que quieres eliminar esta publicación? Esta acción no se puede deshacer.',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await publicacionesService.eliminar(item.idPublicacion);
+              setPortfolio((prev) => prev.filter((p) => p.idPublicacion !== item.idPublicacion));
+            } catch {
+              Alert.alert('Error', 'No se pudo eliminar la publicación.');
+            }
+          },
+        },
+      ]
+    );
+  };
+
+  const handleMenuPost = (item: Publicacion) => {
+    Alert.alert('Publicación', '¿Qué quieres hacer?', [
+      { text: 'Cancelar', style: 'cancel' },
+      { text: 'Editar', onPress: () => router.push(`/portfolio/editar/${item.idPublicacion}`) },
+      { text: 'Eliminar', style: 'destructive', onPress: () => handleEliminarPost(item) },
+    ]);
+  };
 
   const handleSeguir = async () => {
     if (!idUsuario || followLoading) return;
@@ -314,16 +351,23 @@ export default function PerfilArtistaScreen() {
         columnWrapperStyle={styles.gridRow}
         ListHeaderComponent={<ListHeader />}
         renderItem={({ item }) => (
-          <TouchableOpacity
-            activeOpacity={0.85}
-            onPress={() => router.push(`/publicaciones/${item.idPublicacion}`)}
-          >
-            <Image
-              source={{ uri: item.fotoUrl }}
-              style={styles.gridTile}
-              resizeMode="cover"
-            />
-          </TouchableOpacity>
+          <View style={styles.gridTileWrapper}>
+            <TouchableOpacity
+              activeOpacity={0.85}
+              onPress={() => router.push(`/publicaciones/${item.idPublicacion}`)}
+            >
+              <Image source={{ uri: item.fotoUrl }} style={styles.gridTile} resizeMode="cover" />
+            </TouchableOpacity>
+            {esMiPerfil && (
+              <TouchableOpacity
+                style={styles.gridTileMenuBtn}
+                onPress={() => handleMenuPost(item)}
+                hitSlop={{ top: 6, bottom: 6, left: 6, right: 6 }}
+              >
+                <Ionicons name="ellipsis-horizontal" size={14} color="#fff" />
+              </TouchableOpacity>
+            )}
+          </View>
         )}
         ListEmptyComponent={
           <View style={styles.emptyGrid}>

@@ -74,23 +74,6 @@ export default function ChatDirectoScreen() {
     bubbleTime: { fontSize: 10, color: Colors.textMuted, alignSelf: 'flex-end' },
     bubbleTimeMio: { color: 'rgba(255,255,255,0.6)' },
     bubbleLeido: { fontSize: 10 },
-    bubbleImage: { width: 200, height: 200, borderRadius: 10, marginBottom: 2 },
-    postMention: {
-      width: 200,
-      borderRadius: 10,
-      overflow: 'hidden',
-    },
-    postMentionImage: { width: 200, height: 200 },
-    postMentionFooter: {
-      backgroundColor: 'rgba(0,0,0,0.55)',
-      paddingHorizontal: 10,
-      paddingVertical: 7,
-      flexDirection: 'row',
-      alignItems: 'center',
-      justifyContent: 'space-between',
-    },
-    postMentionAutor: { fontSize: 12, color: '#fff', fontWeight: '600', flex: 1 },
-    postMentionBtn: { fontSize: 11, color: Colors.primary, fontWeight: '700' },
     emptyChat: { textAlign: 'center', color: Colors.textMuted, fontSize: 14, padding: 32 },
     inputRow: {
       flexDirection: 'row',
@@ -291,37 +274,6 @@ export default function ChatDirectoScreen() {
             const hora = item.creadoEn
               ? new Date(item.creadoEn).toLocaleTimeString('es-ES', { hour: '2-digit', minute: '2-digit' })
               : '';
-
-            // Detectar mención de post (JSON estructurado)
-            let postMention: { type: string; id: number; url: string; autor: string } | null = null;
-            try {
-              const parsed = JSON.parse(item.contenido ?? '');
-              if (parsed?.type === 'post') postMention = parsed;
-            } catch {}
-
-            if (postMention) {
-              return (
-                <View style={[styles.bubble, esMio ? styles.bubbleMio : styles.bubbleOtro, { padding: 4 }]}>
-                  <TouchableOpacity
-                    style={styles.postMention}
-                    onPress={() => router.push(`/publicaciones/${postMention!.id}`)}
-                    activeOpacity={0.85}
-                  >
-                    <Image source={{ uri: postMention.url }} style={styles.postMentionImage} resizeMode="cover" />
-                    <View style={styles.postMentionFooter}>
-                      <Text style={styles.postMentionAutor} numberOfLines={1}>
-                        {postMention.autor}
-                      </Text>
-                      <Text style={styles.postMentionBtn}>Ver post</Text>
-                    </View>
-                  </TouchableOpacity>
-                  {hora ? (
-                    <Text style={[styles.bubbleTime, esMio && styles.bubbleTimeMio]}>{hora}</Text>
-                  ) : null}
-                </View>
-              );
-            }
-
             return (
               <View style={[styles.bubble, esMio ? styles.bubbleMio : styles.bubbleOtro]}>
                 <Text style={[styles.bubbleText, esMio && styles.bubbleTextMio]}>

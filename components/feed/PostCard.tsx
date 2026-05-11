@@ -8,18 +8,13 @@ import {
   TouchableWithoutFeedback,
   Dimensions,
   Modal,
-  FlatList,
-  ActivityIndicator,
   Alert,
   Pressable,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { Publicacion } from '../../types/publicacion.types';
-import { Usuario } from '../../types/usuario.types';
 import { publicacionesService } from '../../services/publicaciones.service';
-import { conversacionesService } from '../../services/conversaciones.service';
-import api from '../../services/api';
 import { useAuthStore } from '../../store/auth.store';
 import ComentariosModal from './ComentariosModal';
 import { useColors } from '../../hooks/useColors';
@@ -114,40 +109,6 @@ export default function PostCard({ publicacion, onLike }: Props) {
     menuItemText: { fontSize: 14, fontWeight: '500', color: Colors.text },
     menuItemTextDanger: { fontSize: 14, fontWeight: '500', color: Colors.error },
     menuDivider: { height: 1, backgroundColor: Colors.border },
-    // Modal mencionar
-    modalOverlay: { flex: 1, backgroundColor: '#00000088', justifyContent: 'flex-end' },
-    sheet: {
-      backgroundColor: Colors.surface,
-      borderTopLeftRadius: 20,
-      borderTopRightRadius: 20,
-      maxHeight: '70%',
-    },
-    sheetHandle: {
-      width: 36, height: 4, borderRadius: 2,
-      backgroundColor: Colors.border,
-      alignSelf: 'center',
-      marginTop: 12, marginBottom: 8,
-    },
-    sheetTitle: {
-      fontSize: 15, fontWeight: '700', color: Colors.text,
-      paddingHorizontal: 16, paddingBottom: 12,
-    },
-    userItem: {
-      flexDirection: 'row', alignItems: 'center',
-      paddingHorizontal: 16, paddingVertical: 12, gap: 12,
-    },
-    userAvatar: { width: 40, height: 40, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.primary },
-    userAvatarPlaceholder: {
-      width: 40, height: 40, borderRadius: 20,
-      backgroundColor: Colors.surfaceLight,
-      justifyContent: 'center', alignItems: 'center',
-      borderWidth: 1.5, borderColor: Colors.primary,
-    },
-    userAvatarInitial: { fontSize: 16, fontWeight: '700', color: Colors.primary },
-    userName: { fontSize: 14, fontWeight: '600', color: Colors.text },
-    userRol: { fontSize: 12, color: Colors.textMuted },
-    emptyText: { textAlign: 'center', color: Colors.textSecondary, padding: 32, fontSize: 14 },
-    sheetDivider: { height: 0.5, backgroundColor: Colors.border, marginLeft: 68 },
   });
 
   const router = useRouter();
@@ -167,12 +128,6 @@ export default function PostCard({ publicacion, onLike }: Props) {
   const moreBtnRef = useRef<TouchableOpacity>(null);
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 16 });
-
-  // Modal mencionar
-  const [mencionVisible, setMencionVisible] = useState(false);
-  const [seguidos, setSeguidos] = useState<Usuario[]>([]);
-  const [loadingSeguidos, setLoadingSeguidos] = useState(false);
-  const [enviando, setEnviando] = useState<number | null>(null);
 
   const { idPublicacion, fotoUrl, descripcion, estilo, zonaCuerpo, creadoEn, usuario } = publicacion;
 
@@ -256,37 +211,6 @@ export default function PostCard({ publicacion, onLike }: Props) {
         },
       ]
     );
-  };
-
-  const handleMencionar = async () => {
-    setMenuVisible(false);
-    if (!idUsuario) return;
-    setMencionVisible(true);
-    setLoadingSeguidos(true);
-    try {
-      const res = await api.get<Usuario[]>(`/usuarios/${idUsuario}/seguidos`);
-      setSeguidos(res.data);
-    } catch {
-      setSeguidos([]);
-    } finally {
-      setLoadingSeguidos(false);
-    }
-  };
-
-  const handleEnviarMencion = async (destinatario: Usuario) => {
-    if (!idUsuario || enviando) return;
-    setEnviando(destinatario.idUsuario);
-    try {
-      const conv = await conversacionesService.findOrCreate(idUsuario, destinatario.idUsuario);
-      const payload = JSON.stringify({ type: 'post', id: idPublicacion, url: fotoUrl, autor: usuario?.nombre ?? '' });
-      await conversacionesService.enviarMensaje(conv.idConversacion, idUsuario, payload);
-      setMencionVisible(false);
-      Alert.alert('Enviado', `Imagen compartida con ${destinatario.nombre}.`);
-    } catch {
-      Alert.alert('Error', 'No se pudo enviar la imagen.');
-    } finally {
-      setEnviando(null);
-    }
   };
 
   return (
@@ -386,64 +310,10 @@ export default function PostCard({ publicacion, onLike }: Props) {
               <Ionicons name="flag-outline" size={18} color={Colors.error} />
               <Text style={styles.menuItemTextDanger}>Denunciar imagen</Text>
             </TouchableOpacity>
-            <View style={styles.menuDivider} />
-            <TouchableOpacity style={styles.menuItem} onPress={handleMencionar}>
-              <Ionicons name="paper-plane-outline" size={18} color={Colors.text} />
-              <Text style={styles.menuItemText}>Mencionar imagen a...</Text>
-            </TouchableOpacity>
           </View>
         </Pressable>
       </Modal>
 
-      {/* ── Modal mencionar a usuario ── */}
-      <Modal visible={mencionVisible} transparent animationType="slide" onRequestClose={() => setMencionVisible(false)}>
-        <Pressable style={styles.modalOverlay} onPress={() => setMencionVisible(false)}>
-          <Pressable style={styles.sheet} onPress={() => {}}>
-            <View style={styles.sheetHandle} />
-            <Text style={styles.sheetTitle}>Enviar a...</Text>
-            {loadingSeguidos ? (
-              <ActivityIndicator color={Colors.primary} style={{ padding: 32 }} />
-            ) : (
-              <FlatList
-                data={seguidos}
-                keyExtractor={(item) => String(item.idUsuario)}
-                renderItem={({ item }) => (
-                  <TouchableOpacity
-                    style={styles.userItem}
-                    onPress={() => handleEnviarMencion(item)}
-                    disabled={enviando === item.idUsuario}
-                    activeOpacity={0.7}
-                  >
-                    {item.avatar ? (
-                      <Image source={{ uri: item.avatar }} style={styles.userAvatar} />
-                    ) : (
-                      <View style={styles.userAvatarPlaceholder}>
-                        <Text style={styles.userAvatarInitial}>
-                          {item.nombre?.charAt(0).toUpperCase() ?? '?'}
-                        </Text>
-                      </View>
-                    )}
-                    <View style={{ flex: 1 }}>
-                      <Text style={styles.userName}>{item.nombre} {item.apellidos}</Text>
-                      <Text style={styles.userRol}>{item.rol}</Text>
-                    </View>
-                    {enviando === item.idUsuario ? (
-                      <ActivityIndicator size="small" color={Colors.primary} />
-                    ) : (
-                      <Ionicons name="paper-plane-outline" size={18} color={Colors.textMuted} />
-                    )}
-                  </TouchableOpacity>
-                )}
-                ItemSeparatorComponent={() => <View style={styles.sheetDivider} />}
-                ListEmptyComponent={
-                  <Text style={styles.emptyText}>No sigues a nadie aún.</Text>
-                }
-                showsVerticalScrollIndicator={false}
-              />
-            )}
-          </Pressable>
-        </Pressable>
-      </Modal>
     </View>
   );
 }

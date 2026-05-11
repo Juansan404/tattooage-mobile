@@ -7,6 +7,7 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
+  Alert,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -14,14 +15,75 @@ import { useRouter } from 'expo-router';
 import { useFocusEffect } from 'expo-router';
 import { conversacionesService } from '../../services/conversaciones.service';
 import { Conversacion } from '../../types/conversacion.types';
-import { Colors } from '../../constants/colors';
 import { useAuthStore } from '../../store/auth.store';
+import { useColors } from '../../hooks/useColors';
 
 export default function ConversacionesScreen() {
+  const Colors = useColors();
+  const styles = StyleSheet.create({
+    container: { flex: 1, backgroundColor: Colors.background },
+    center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, gap: 10 },
+    header: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: 16,
+      paddingVertical: 12,
+      borderBottomWidth: 0.5,
+      borderBottomColor: Colors.border,
+    },
+    headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.text },
+    convItem: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      paddingHorizontal: 16,
+      paddingVertical: 14,
+      gap: 12,
+    },
+    avatar: { width: 52, height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: Colors.primary },
+    avatarPlaceholder: {
+      width: 52, height: 52, borderRadius: 26,
+      backgroundColor: Colors.surfaceLight,
+      justifyContent: 'center', alignItems: 'center',
+      borderWidth: 1.5, borderColor: Colors.primary,
+    },
+    avatarInitial: { fontSize: 20, fontWeight: '700', color: Colors.primary },
+    convInfo: { flex: 1, gap: 2 },
+    convRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+    convName: { fontSize: 15, fontWeight: '700', color: Colors.text, flex: 1 },
+    convTime: { fontSize: 11, color: Colors.textMuted },
+    convRol: { fontSize: 12, color: Colors.textMuted },
+    separator: { height: 0.5, backgroundColor: Colors.border, marginLeft: 80 },
+    emptyTitle: { fontSize: 17, fontWeight: '700', color: Colors.text },
+    emptySub: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', lineHeight: 18 },
+  });
+
   const router = useRouter();
   const { idUsuario } = useAuthStore();
   const [conversaciones, setConversaciones] = useState<Conversacion[]>([]);
   const [loading, setLoading] = useState(true);
+
+  const handleEliminar = (idConversacion: number, nombre: string) => {
+    Alert.alert(
+      'Eliminar conversación',
+      `¿Borrar la conversación con ${nombre}? Se eliminarán todos los mensajes.`,
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: async () => {
+            try {
+              await conversacionesService.eliminar(idConversacion);
+              setConversaciones((prev) => prev.filter((c) => c.idConversacion !== idConversacion));
+            } catch {
+              Alert.alert('Error', 'No se pudo eliminar la conversación.');
+            }
+          },
+        },
+      ]
+    );
+  };
 
   const cargar = useCallback(async () => {
     if (!idUsuario) return;
@@ -74,6 +136,7 @@ export default function ConversacionesScreen() {
               <TouchableOpacity
                 style={styles.convItem}
                 onPress={() => router.push(`/conversaciones/${item.idConversacion}`)}
+                onLongPress={() => handleEliminar(item.idConversacion, otro?.nombre ?? 'este usuario')}
                 activeOpacity={0.75}
               >
                 {otro?.avatar ? (
@@ -114,41 +177,3 @@ export default function ConversacionesScreen() {
     </SafeAreaView>
   );
 }
-
-const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.background },
-  center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, gap: 10 },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    borderBottomWidth: 0.5,
-    borderBottomColor: Colors.border,
-  },
-  headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.text },
-  convItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    gap: 12,
-  },
-  avatar: { width: 52, height: 52, borderRadius: 26, borderWidth: 1.5, borderColor: Colors.primary },
-  avatarPlaceholder: {
-    width: 52, height: 52, borderRadius: 26,
-    backgroundColor: Colors.surfaceLight,
-    justifyContent: 'center', alignItems: 'center',
-    borderWidth: 1.5, borderColor: Colors.primary,
-  },
-  avatarInitial: { fontSize: 20, fontWeight: '700', color: Colors.primary },
-  convInfo: { flex: 1, gap: 2 },
-  convRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
-  convName: { fontSize: 15, fontWeight: '700', color: Colors.text, flex: 1 },
-  convTime: { fontSize: 11, color: Colors.textMuted },
-  convRol: { fontSize: 12, color: Colors.textMuted },
-  separator: { height: 0.5, backgroundColor: Colors.border, marginLeft: 80 },
-  emptyTitle: { fontSize: 17, fontWeight: '700', color: Colors.text },
-  emptySub: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', lineHeight: 18 },
-});

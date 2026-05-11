@@ -29,6 +29,10 @@ export const conversacionesService = {
     return r.data;
   },
 
+  async eliminar(idConversacion: number): Promise<void> {
+    await api.delete(`/conversaciones/${idConversacion}`);
+  },
+
   async countNoLeidos(idUsuario: number): Promise<number> {
     const r = await api.get<{ count: number }>(`/conversaciones/no-leidos/${idUsuario}`);
     return r.data.count;

@@ -31,10 +31,14 @@ function timeAgo(iso: string): string {
 
 function textoNotif(tipo: TipoNotificacion, nombre: string): string {
   switch (tipo) {
-    case 'LIKE':       return `${nombre} le dio like a tu publicación`;
-    case 'COMENTARIO': return `${nombre} comentó en tu publicación`;
-    case 'SEGUIDOR':   return `${nombre} empezó a seguirte`;
-    case 'SOLICITUD':  return `${nombre} te envió una solicitud de cita`;
+    case 'LIKE':           return `${nombre} le dio like a tu publicación`;
+    case 'COMENTARIO':     return `${nombre} comentó en tu publicación`;
+    case 'SEGUIDOR':       return `${nombre} empezó a seguirte`;
+    case 'SOLICITUD':      return `${nombre} te envió una solicitud de cita`;
+    case 'VERIFICACION':   return 'Tu imagen no ha pasado el filtro de contenido y será revisada por un administrador.';
+    case 'REVISION_ADMIN': return `${nombre} ha publicado una imagen que requiere revisión de moderación.`;
+    case 'APROBADA':       return 'Tu publicación ha sido revisada y aprobada por el administrador.';
+    case 'RECHAZADA':      return 'Tu publicación no ha superado la revisión y ha sido eliminada.';
   }
 }
 
@@ -91,10 +95,14 @@ export default function NotificacionesScreen() {
 
   const iconoNotif = (tipo: TipoNotificacion): { name: string; color: string } => {
     switch (tipo) {
-      case 'LIKE':       return { name: 'heart',        color: '#e94560' };
-      case 'COMENTARIO': return { name: 'chatbubble',   color: '#3498db' };
-      case 'SEGUIDOR':   return { name: 'person-add',   color: Colors.primary };
-      case 'SOLICITUD':  return { name: 'calendar',     color: '#2ecc71' };
+      case 'LIKE':           return { name: 'heart',           color: '#e94560' };
+      case 'COMENTARIO':     return { name: 'chatbubble',      color: '#3498db' };
+      case 'SEGUIDOR':       return { name: 'person-add',      color: Colors.primary };
+      case 'SOLICITUD':      return { name: 'calendar',        color: '#2ecc71' };
+      case 'VERIFICACION':   return { name: 'warning',         color: '#f39c12' };
+      case 'REVISION_ADMIN': return { name: 'shield',          color: '#e67e22' };
+      case 'APROBADA':       return { name: 'checkmark-circle',color: '#27ae60' };
+      case 'RECHAZADA':      return { name: 'close-circle',    color: '#C0392B' };
     }
   };
 
@@ -138,7 +146,12 @@ export default function NotificacionesScreen() {
       router.push(`/usuarios/${n.emisor.idUsuario}`);
     } else if (n.tipo === 'SOLICITUD' && n.idReferencia) {
       router.push(`/solicitudes/${n.idReferencia}`);
+    } else if (n.tipo === 'VERIFICACION' && n.idReferencia) {
+      router.push(`/verificar/${n.idReferencia}`);
+    } else if ((n.tipo === 'REVISION_ADMIN' || n.tipo === 'APROBADA') && n.idReferencia) {
+      router.push(`/publicaciones/${n.idReferencia}`);
     }
+    // RECHAZADA: la publicación fue eliminada, no hay destino
   };
 
   const renderItem = ({ item }: { item: Notificacion }) => {

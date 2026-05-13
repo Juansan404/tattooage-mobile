@@ -1,6 +1,6 @@
 import { Usuario } from './usuario.types';
 
-export type TipoNotificacion = 'LIKE' | 'COMENTARIO' | 'SEGUIDOR' | 'SOLICITUD';
+export type TipoNotificacion = 'LIKE' | 'COMENTARIO' | 'SEGUIDOR' | 'SOLICITUD' | 'VERIFICACION' | 'REVISION_ADMIN' | 'APROBADA' | 'RECHAZADA';
 
 export interface Notificacion {
   idNotificacion: number;

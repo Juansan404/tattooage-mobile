@@ -22,6 +22,20 @@ import { useAuthStore } from '../../store/auth.store';
 import { Estilo } from '../../types/estilo.types';
 import { useColors } from '../../hooks/useColors';
 
+const TATTOO_LABELS = ['tattoo', 'body art', 'skin art', 'ink', 'temporary tattoo', 'henna'];
+
+async function detectarTatuaje(filePath: string): Promise<boolean> {
+  try {
+    const ImageLabeling = require('@react-native-ml-kit/image-labeling').default;
+    const labels: { text: string; confidence: number }[] = await ImageLabeling.label(filePath);
+    return labels.some(
+      (l) => TATTOO_LABELS.some((t) => l.text.toLowerCase().includes(t)) && l.confidence > 0.45
+    );
+  } catch {
+    return true;
+  }
+}
+
 export default function NuevaPublicacionScreen() {
   const Colors = useColors();
   const styles = StyleSheet.create({
@@ -210,16 +224,29 @@ export default function NuevaPublicacionScreen() {
     }
     try {
       setLoading(true);
-      await publicacionesService.crear({
+      const pub = await publicacionesService.crear({
         usuario: idUsuario ? { idUsuario } : undefined,
         fotoUrl: imagenBase64,
         descripcion: descripcion.trim() || undefined,
         estilos: seleccionados.length > 0 ? seleccionados : undefined,
         zonaCuerpo: zonaCuerpo.trim() || undefined,
       });
-      Alert.alert('¡Publicado!', 'Tu trabajo ya está visible en el feed.', [
-        { text: 'Ver feed', onPress: () => router.replace('/(tabs)/feed') },
-      ]);
+
+      const esTatuaje = await detectarTatuaje(imagenUri);
+      if (!esTatuaje && pub.idPublicacion && idUsuario) {
+        try {
+          await publicacionesService.solicitarVerificacion(pub.idPublicacion, idUsuario);
+        } catch { /* silencioso */ }
+        Alert.alert(
+          '¡Publicado!',
+          'Tu imagen está en el feed. No hemos detectado un tatuaje claramente — revisa tu bandeja de notificaciones para verificarla.',
+          [{ text: 'Ver feed', onPress: () => router.replace('/(tabs)/feed') }]
+        );
+      } else {
+        Alert.alert('¡Publicado!', 'Tu trabajo ya está visible en el feed.', [
+          { text: 'Ver feed', onPress: () => router.replace('/(tabs)/feed') },
+        ]);
+      }
     } catch {
       Alert.alert('Error', 'No se pudo publicar. Inténtalo más tarde.');
     } finally {

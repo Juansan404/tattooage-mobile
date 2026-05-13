@@ -80,4 +80,12 @@ export const publicacionesService = {
     const response = await api.get<Publicacion[]>(`/publicaciones/guardadas/${idUsuario}`);
     return response.data;
   },
+
+  async solicitarVerificacion(idPublicacion: number, idUsuario: number): Promise<void> {
+    await api.post(`/publicaciones/${idPublicacion}/solicitar-verificacion`, { idUsuario });
+  },
+
+  async verificar(idPublicacion: number, mantener: boolean): Promise<void> {
+    await api.post(`/publicaciones/${idPublicacion}/verificar`, { mantener });
+  },
 };

@@ -11,16 +11,16 @@ import {
   Alert,
   ActivityIndicator,
   Image,
+  Switch,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import api from '../../services/api';
-import { estilosService } from '../../services/estilos.service';
+import { artistasService } from '../../services/artistas.service';
 import { useAuthStore } from '../../store/auth.store';
-import { Usuario } from '../../types/usuario.types';
-import { Estilo } from '../../types/estilo.types';
+import { Usuario, PerfilArtista } from '../../types/usuario.types';
 import { useColors } from '../../hooks/useColors';
 
 export default function EditarPerfilScreen() {
@@ -74,6 +74,18 @@ export default function EditarPerfilScreen() {
     },
     avatarInitial: { fontSize: 34, fontWeight: '700', color: Colors.primary },
     avatarHint: { fontSize: 12, color: Colors.textMuted },
+    sectionTitle: {
+      fontSize: 13,
+      fontWeight: '700',
+      color: Colors.primary,
+      textTransform: 'uppercase',
+      letterSpacing: 0.8,
+      marginTop: 20,
+      marginBottom: 4,
+      paddingBottom: 6,
+      borderBottomWidth: 0.5,
+      borderBottomColor: Colors.border,
+    },
     label: {
       fontSize: 12,
       color: Colors.textSecondary,
@@ -93,49 +105,18 @@ export default function EditarPerfilScreen() {
       color: Colors.text,
     },
     inputMultiline: { minHeight: 80, textAlignVertical: 'top' },
-    selectedTags: { flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 8 },
-    selectedTag: {
+    switchRow: {
       flexDirection: 'row',
       alignItems: 'center',
-      backgroundColor: Colors.primary,
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      borderRadius: 20,
-    },
-    selectedTagText: { color: Colors.white, fontSize: 13, fontWeight: '600' },
-    chipsRow: { marginBottom: 8 },
-    chip: {
-      paddingHorizontal: 14,
-      paddingVertical: 8,
-      borderRadius: 20,
-      borderWidth: 1,
-      borderColor: Colors.border,
-      marginRight: 8,
-      backgroundColor: Colors.surface,
-    },
-    chipActivo: { backgroundColor: Colors.primary + '33', borderColor: Colors.primary },
-    chipText: { fontSize: 13, color: Colors.textSecondary },
-    chipTextActivo: { color: Colors.primary, fontWeight: '700' },
-    tagInputRow: { flexDirection: 'row', gap: 8, marginBottom: 4 },
-    tagInput: {
-      flex: 1,
+      justifyContent: 'space-between',
       backgroundColor: Colors.surface,
       borderWidth: 1,
       borderColor: Colors.border,
       borderRadius: 10,
       paddingHorizontal: 14,
-      paddingVertical: 10,
-      fontSize: 14,
-      color: Colors.text,
+      paddingVertical: 12,
     },
-    tagAddBtn: {
-      width: 44,
-      backgroundColor: Colors.primary,
-      borderRadius: 10,
-      justifyContent: 'center',
-      alignItems: 'center',
-    },
-    tagAddBtnDisabled: { backgroundColor: Colors.surface, borderWidth: 1, borderColor: Colors.border },
+    switchLabel: { fontSize: 15, color: Colors.text },
     btn: {
       backgroundColor: Colors.primary,
       borderRadius: 12,
@@ -151,17 +132,23 @@ export default function EditarPerfilScreen() {
   const router = useRouter();
   const { idUsuario, rol } = useAuthStore();
 
+  // Usuario fields
   const [nombre, setNombre] = useState('');
   const [apellidos, setApellidos] = useState('');
   const [bio, setBio] = useState('');
   const [avatar, setAvatar] = useState('');
   const [telefono, setTelefono] = useState('');
+
+  // PerfilArtista fields
+  const [especialidades, setEspecialidades] = useState('');
+  const [anosExperiencia, setAnosExperiencia] = useState('');
+  const [instagram, setInstagram] = useState('');
+  const [precioHora, setPrecioHora] = useState('');
+  const [portfolioUrl, setPortfolioUrl] = useState('');
+  const [disponible, setDisponible] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [guardando, setGuardando] = useState(false);
-
-  const [popularStyles, setPopularStyles] = useState<Estilo[]>([]);
-  const [misEstilos, setMisEstilos] = useState<string[]>([]);
-  const [tagInput, setTagInput] = useState('');
 
   const seleccionarAvatar = async () => {
     const permiso = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -184,21 +171,27 @@ export default function EditarPerfilScreen() {
   useEffect(() => {
     const cargar = async () => {
       try {
-        const [userRes] = await Promise.all([
-          api.get<Usuario>(`/usuarios/${idUsuario}`),
-          estilosService.getTop().then(setPopularStyles).catch(() => {}),
-          rol === 'ARTISTA' && idUsuario
-            ? estilosService.getByArtista(idUsuario)
-                .then(list => setMisEstilos(list.map(e => e.nombre)))
-                .catch(() => {})
-            : Promise.resolve(),
-        ]);
+        const requests: Promise<any>[] = [api.get<Usuario>(`/usuarios/${idUsuario}`)];
+        if (rol === 'ARTISTA' && idUsuario) {
+          requests.push(artistasService.getPerfilById(idUsuario));
+        }
+        const [userRes, perfilRes] = await Promise.all(requests);
         const u = userRes.data;
         setNombre(u.nombre ?? '');
         setApellidos(u.apellidos ?? '');
         setBio(u.bio ?? '');
         setAvatar(u.avatar ?? '');
         setTelefono((u as any).telefono ?? '');
+
+        if (rol === 'ARTISTA' && perfilRes) {
+          const p: PerfilArtista = perfilRes;
+          setEspecialidades(p.especialidades ?? '');
+          setAnosExperiencia(p.anosExperiencia != null ? String(p.anosExperiencia) : '');
+          setInstagram(p.instagram ?? '');
+          setPrecioHora(p.precioHora != null ? String(p.precioHora) : '');
+          setPortfolioUrl(p.portfolioUrl ?? '');
+          setDisponible(p.disponible ?? false);
+        }
       } catch {
         Alert.alert('Error', 'No se pudo cargar el perfil.');
         router.back();
@@ -208,19 +201,6 @@ export default function EditarPerfilScreen() {
     };
     cargar();
   }, [idUsuario, rol]);
-
-  const toggleEstilo = (nombre: string) => {
-    setMisEstilos(prev =>
-      prev.includes(nombre) ? prev.filter(e => e !== nombre) : [...prev, nombre]
-    );
-  };
-
-  const agregarTag = () => {
-    const tag = tagInput.trim().toLowerCase();
-    if (!tag) return;
-    if (!misEstilos.includes(tag)) setMisEstilos(prev => [...prev, tag]);
-    setTagInput('');
-  };
 
   const handleGuardar = async () => {
     if (!nombre.trim()) {
@@ -238,7 +218,13 @@ export default function EditarPerfilScreen() {
       });
       if (rol === 'ARTISTA' && idUsuario) {
         try {
-          await estilosService.updateArtista(idUsuario, misEstilos);
+          const perfilData: Record<string, any> = { disponible };
+          if (especialidades.trim()) perfilData.especialidades = especialidades.trim();
+          if (anosExperiencia.trim()) perfilData.anosExperiencia = parseInt(anosExperiencia, 10);
+          if (instagram.trim()) perfilData.instagram = instagram.trim();
+          if (precioHora.trim()) perfilData.precioHora = parseFloat(precioHora);
+          if (portfolioUrl.trim()) perfilData.portfolioUrl = portfolioUrl.trim();
+          await api.put(`/artistas/${idUsuario}/perfil`, perfilData);
         } catch {
           // silencioso — el perfil principal sí se guardó
         }
@@ -282,7 +268,7 @@ export default function EditarPerfilScreen() {
         </View>
 
         <ScrollView contentContainerStyle={styles.form} keyboardShouldPersistTaps="handled">
-          {/* Preview avatar */}
+          {/* Avatar */}
           <TouchableOpacity style={styles.avatarSection} onPress={seleccionarAvatar} activeOpacity={0.8}>
             {avatar.trim() ? (
               <View>
@@ -303,6 +289,9 @@ export default function EditarPerfilScreen() {
             )}
             <Text style={styles.avatarHint}>Toca para cambiar foto</Text>
           </TouchableOpacity>
+
+          {/* ── Datos personales ── */}
+          <Text style={styles.sectionTitle}>Datos personales</Text>
 
           <Text style={styles.label}>Nombre *</Text>
           <TextInput
@@ -346,59 +335,71 @@ export default function EditarPerfilScreen() {
             keyboardType="phone-pad"
           />
 
+          {/* ── Perfil artista ── */}
           {rol === 'ARTISTA' && (
             <>
-              <Text style={styles.label}>Mis estilos</Text>
-              {misEstilos.length > 0 && (
-                <View style={styles.selectedTags}>
-                  {misEstilos.map(tag => (
-                    <TouchableOpacity
-                      key={tag}
-                      style={styles.selectedTag}
-                      onPress={() => toggleEstilo(tag)}
-                      activeOpacity={0.7}
-                    >
-                      <Text style={styles.selectedTagText}>{tag}</Text>
-                      <Ionicons name="close" size={13} color={Colors.white} style={{ marginLeft: 4 }} />
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-              {popularStyles.length > 0 && (
-                <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.chipsRow}>
-                  {popularStyles.map(e => {
-                    const activo = misEstilos.includes(e.nombre);
-                    return (
-                      <TouchableOpacity
-                        key={e.idEstilo}
-                        style={[styles.chip, activo && styles.chipActivo]}
-                        onPress={() => toggleEstilo(e.nombre)}
-                        activeOpacity={0.7}
-                      >
-                        <Text style={[styles.chipText, activo && styles.chipTextActivo]}>{e.nombre}</Text>
-                      </TouchableOpacity>
-                    );
-                  })}
-                </ScrollView>
-              )}
-              <View style={styles.tagInputRow}>
-                <TextInput
-                  style={styles.tagInput}
-                  placeholder="Añadir estilo personalizado..."
-                  placeholderTextColor={Colors.textMuted}
-                  value={tagInput}
-                  onChangeText={setTagInput}
-                  onSubmitEditing={agregarTag}
-                  returnKeyType="done"
-                  autoCapitalize="none"
+              <Text style={styles.sectionTitle}>Perfil artista</Text>
+
+              <Text style={styles.label}>Especialidades</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ej: Realismo, Fineline, Blackwork..."
+                placeholderTextColor={Colors.textMuted}
+                value={especialidades}
+                onChangeText={setEspecialidades}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.label}>Años de experiencia</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ej: 5"
+                placeholderTextColor={Colors.textMuted}
+                value={anosExperiencia}
+                onChangeText={setAnosExperiencia}
+                keyboardType="numeric"
+              />
+
+              <Text style={styles.label}>Instagram</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="@tu_usuario"
+                placeholderTextColor={Colors.textMuted}
+                value={instagram}
+                onChangeText={setInstagram}
+                autoCapitalize="none"
+              />
+
+              <Text style={styles.label}>Precio por hora (€)</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ej: 75.00"
+                placeholderTextColor={Colors.textMuted}
+                value={precioHora}
+                onChangeText={setPrecioHora}
+                keyboardType="decimal-pad"
+              />
+
+              <Text style={styles.label}>Portfolio URL</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="https://miportfolio.com"
+                placeholderTextColor={Colors.textMuted}
+                value={portfolioUrl}
+                onChangeText={setPortfolioUrl}
+                autoCapitalize="none"
+                keyboardType="url"
+              />
+
+              <Text style={styles.label}>Disponibilidad</Text>
+              <View style={styles.switchRow}>
+                <Text style={styles.switchLabel}>Disponible para citas</Text>
+                <Switch
+                  value={disponible}
+                  onValueChange={setDisponible}
+                  trackColor={{ false: Colors.border, true: Colors.primary + '88' }}
+                  thumbColor={disponible ? Colors.primary : Colors.textMuted}
                 />
-                <TouchableOpacity
-                  style={[styles.tagAddBtn, !tagInput.trim() && styles.tagAddBtnDisabled]}
-                  onPress={agregarTag}
-                  disabled={!tagInput.trim()}
-                >
-                  <Ionicons name="add" size={20} color={tagInput.trim() ? Colors.white : Colors.textMuted} />
-                </TouchableOpacity>
               </View>
             </>
           )}

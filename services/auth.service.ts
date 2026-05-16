@@ -7,16 +7,25 @@ export const authService = {
   async login(data: LoginRequest): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/login', data);
     const { token } = response.data;
-    await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
-    await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(response.data));
+    if (token) {
+      await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(response.data));
+    }
     return response.data;
   },
 
   async register(data: RegisterRequest): Promise<AuthResponse> {
     const response = await api.post<AuthResponse>('/auth/register', data);
-    const { token } = response.data;
-    await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
-    await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(response.data));
+    const { token, estadoRegistro } = response.data;
+    if (token && estadoRegistro === 'ACTIVO') {
+      await AsyncStorage.setItem(STORAGE_KEYS.JWT_TOKEN, token);
+      await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(response.data));
+    }
+    return response.data;
+  },
+
+  async checkEstado(email: string): Promise<{ estadoRegistro: string }> {
+    const response = await api.get<{ estadoRegistro: string }>(`/auth/estado?email=${encodeURIComponent(email)}`);
     return response.data;
   },
 
@@ -32,5 +41,9 @@ export const authService = {
     } catch {
       return null;
     }
+  },
+
+  async saveSession(data: AuthResponse): Promise<void> {
+    await AsyncStorage.setItem(STORAGE_KEYS.USER_DATA, JSON.stringify(data));
   },
 };

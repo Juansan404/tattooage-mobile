@@ -12,6 +12,7 @@ import {
   ActivityIndicator,
   Alert,
   Dimensions,
+  Share,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Ionicons from '@expo/vector-icons/Ionicons';
@@ -20,11 +21,13 @@ import { publicacionesService } from '../../services/publicaciones.service';
 import { Publicacion, Comentario } from '../../types/publicacion.types';
 import { useAuthStore } from '../../store/auth.store';
 import { useColors } from '../../hooks/useColors';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 
 export default function DetallePublicacionScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -70,7 +73,8 @@ export default function DetallePublicacionScreen() {
       padding: 12,
       gap: 4,
     },
-    comentarioAutor: { fontSize: 13, fontWeight: '700', color: Colors.text },
+    comentarioAutor: { fontSize: 13, fontWeight: '700', color: Colors.primary },
+    comentarioAutorPlain: { fontSize: 13, fontWeight: '700', color: Colors.text },
     comentarioTexto: { fontSize: 14, color: Colors.textSecondary },
     comentarioFecha: { fontSize: 11, color: Colors.textMuted },
     inputRow: {
@@ -88,7 +92,6 @@ export default function DetallePublicacionScreen() {
       borderRadius: 20,
       paddingHorizontal: 14,
       paddingVertical: 10,
-      color: Colors.text,
       fontSize: 14,
       maxHeight: 100,
     },
@@ -141,6 +144,19 @@ export default function DetallePublicacionScreen() {
     cargar();
   }, [id]);
 
+  const handleShare = async () => {
+    try {
+      await Share.share({
+        message: publicacion?.descripcion
+          ? `${publicacion.descripcion}\n\n— TattooAge`
+          : 'Mira este tatuaje en TattooAge',
+        url: publicacion?.fotoUrl,
+      });
+    } catch {
+      // user cancelled or share not supported
+    }
+  };
+
   const handleLike = async () => {
     if (!idUsuario || likeLoading) return;
     setLikeLoading(true);
@@ -185,7 +201,8 @@ export default function DetallePublicacionScreen() {
     <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         style={{ flex: 1 }}
-        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        behavior="padding"
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
       >
         {/* Header */}
         <View style={styles.header}>
@@ -209,9 +226,12 @@ export default function DetallePublicacionScreen() {
                 />
                 <Text style={styles.actionCount}>{likeCount}</Text>
               </TouchableOpacity>
+              <TouchableOpacity style={styles.actionBtn} onPress={handleShare}>
+                <Ionicons name="share-outline" size={26} color={Colors.text} />
+              </TouchableOpacity>
               <TouchableOpacity style={styles.arBtn} onPress={() => router.push(`/ar/${id}`)}>
                 <Ionicons name="scan-outline" size={16} color={Colors.white} />
-                <Text style={styles.arBtnText}>Probar en RA</Text>
+                <Text style={styles.arBtnText}>{t('post_ar_btn')}</Text>
               </TouchableOpacity>
             </View>
 
@@ -236,13 +256,24 @@ export default function DetallePublicacionScreen() {
           {/* Comentarios */}
           <View style={styles.comentariosSection}>
             <Text style={styles.sectionTitle}>
-              Comentarios ({comentarios.length})
+              {t('post_comments')} ({comentarios.length})
             </Text>
             {comentarios.map((c) => (
               <View key={c.idComentario} style={styles.comentarioItem}>
-                <Text style={styles.comentarioAutor}>
-                  {c.usuario?.nombre ?? 'Usuario'}
-                </Text>
+                {c.usuario?.rol === 'ARTISTA' ? (
+                  <TouchableOpacity
+                    onPress={() => router.push(`/artistas/${c.usuario!.idUsuario}`)}
+                    hitSlop={{ top: 4, bottom: 4, left: 4, right: 4 }}
+                  >
+                    <Text style={styles.comentarioAutor}>
+                      {c.usuario.nombre}
+                    </Text>
+                  </TouchableOpacity>
+                ) : (
+                  <Text style={styles.comentarioAutorPlain}>
+                    {c.usuario?.nombre ?? 'Usuario'}
+                  </Text>
+                )}
                 <Text style={styles.comentarioTexto}>{c.contenido}</Text>
                 <Text style={styles.comentarioFecha}>
                   {new Date(c.creadoEn).toLocaleDateString('es-ES')}
@@ -255,9 +286,10 @@ export default function DetallePublicacionScreen() {
         {/* Input de comentario */}
         <View style={styles.inputRow}>
           <TextInput
-            style={styles.input}
-            placeholder="Añade un comentario..."
+            style={[styles.input, { color: Colors.text }]}
+            placeholder={t('post_comment_placeholder')}
             placeholderTextColor={Colors.textMuted}
+            selectionColor={Colors.primary}
             value={nuevoComentario}
             onChangeText={setNuevoComentario}
             multiline
@@ -270,7 +302,7 @@ export default function DetallePublicacionScreen() {
             {enviando ? (
               <ActivityIndicator size="small" color={Colors.white} />
             ) : (
-              <Text style={styles.sendText}>Enviar</Text>
+              <Text style={styles.sendText}>{t('post_send')}</Text>
             )}
           </TouchableOpacity>
         </View>

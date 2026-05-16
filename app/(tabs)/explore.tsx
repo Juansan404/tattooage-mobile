@@ -21,6 +21,7 @@ import { Publicacion } from '../../types/publicacion.types';
 import { Estilo } from '../../types/estilo.types';
 import { Usuario } from '../../types/usuario.types';
 import { useColors } from '../../hooks/useColors';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GAP = 2;
@@ -29,6 +30,7 @@ const PAGE_SIZE = 15;
 
 export default function ExploreScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     headerFixed: {
@@ -243,7 +245,7 @@ export default function ExploreScreen() {
           <Ionicons name="search-outline" size={16} color={Colors.textMuted} />
           <TextInput
             style={styles.searchInput}
-            placeholder="Buscar tatuajes, estilos, artistas..."
+            placeholder={t('explore_placeholder')}
             placeholderTextColor={Colors.textMuted}
             value={busqueda}
             onChangeText={setBusqueda}
@@ -298,11 +300,11 @@ export default function ExploreScreen() {
           ListHeaderComponent={
             busqueda.trim() ? (
               <View style={styles.usersSection}>
-                <Text style={styles.usersTitle}>Personas</Text>
+                <Text style={styles.usersTitle}>{t('explore_people')}</Text>
                 {searchingUsers ? (
                   <ActivityIndicator size="small" color={Colors.primary} style={{ marginVertical: 12 }} />
                 ) : usuarios.length === 0 ? (
-                  <Text style={styles.usersEmpty}>Sin resultados para "{busqueda}"</Text>
+                  <Text style={styles.usersEmpty}>{t('explore_no_results')} "{busqueda}"</Text>
                 ) : (
                   <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.usersScroll}>
                     {usuarios.map((u) => (
@@ -328,7 +330,7 @@ export default function ExploreScreen() {
                   </ScrollView>
                 )}
                 {filtradas.length > 0 && (
-                  <Text style={styles.usersTitle}>Publicaciones</Text>
+                  <Text style={styles.usersTitle}>{t('explore_posts')}</Text>
                 )}
               </View>
             ) : null
@@ -339,13 +341,13 @@ export default function ExploreScreen() {
                 <ActivityIndicator size="small" color={Colors.primary} />
               </View>
             ) : !hasMore && todas.length > 0 && !busqueda.trim() ? (
-              <Text style={styles.footerEnd}>— Ya lo has visto todo —</Text>
+              <Text style={styles.footerEnd}>{t('explore_end')}</Text>
             ) : null
           }
           ListEmptyComponent={
             <View style={styles.center}>
               <Text style={styles.emptyText}>
-                {busqueda ? 'Sin publicaciones para tu búsqueda.' : 'No hay publicaciones aún.'}
+                {busqueda ? t('explore_no_posts_search') : t('explore_no_posts')}
               </Text>
             </View>
           }

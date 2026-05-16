@@ -42,7 +42,7 @@ export default function RecortarScreen() {
   const pointsRef = useRef(points);
   useEffect(() => { pointsRef.current = points; }, [points]);
 
-  const activePtIdx = useRef<number | null>(null);
+  const activePtIdx = useRef<number>(-1);   // -1 = ninguno
   const startPos = useRef({ x: 0, y: 0 });
 
   useEffect(() => {
@@ -53,31 +53,32 @@ export default function RecortarScreen() {
   }, [id]);
 
   const panResponder = PanResponder.create({
-    onStartShouldSetPanResponder: (evt) => {
+    // Siempre reclamar el gesto; el filtrado real ocurre en grant
+    onStartShouldSetPanResponder: () => true,
+    onMoveShouldSetPanResponder: () => true,
+    onPanResponderGrant: (evt) => {
       const { locationX, locationY } = evt.nativeEvent;
       const idx = pointsRef.current.findIndex(pt =>
-        Math.hypot(pt.x - locationX, pt.y - locationY) < HANDLE_R + 8
+        Math.hypot(pt.x - locationX, pt.y - locationY) < HANDLE_R + 14
       );
+      activePtIdx.current = idx; // -1 si no se tocó ningún punto
       if (idx >= 0) {
-        activePtIdx.current = idx;
         startPos.current = { ...pointsRef.current[idx] };
-        return true;
       }
-      return false;
     },
-    onMoveShouldSetPanResponder: () => activePtIdx.current !== null,
     onPanResponderMove: (_, gs) => {
-      if (activePtIdx.current === null) return;
+      if (activePtIdx.current < 0) return;
       setPoints(prev => {
         const next = [...prev];
-        next[activePtIdx.current!] = {
+        next[activePtIdx.current] = {
           x: Math.max(0, Math.min(IMG_SIZE, startPos.current.x + gs.dx)),
           y: Math.max(0, Math.min(IMG_SIZE, startPos.current.y + gs.dy)),
         };
         return next;
       });
     },
-    onPanResponderRelease: () => { activePtIdx.current = null; },
+    onPanResponderRelease: () => { activePtIdx.current = -1; },
+    onPanResponderTerminate: () => { activePtIdx.current = -1; },
   });
 
   const addPoint = () => {

@@ -16,34 +16,37 @@ import { notificacionesService } from '../services/notificaciones.service';
 import { Notificacion, TipoNotificacion } from '../types/notificacion.types';
 import { useAuthStore } from '../store/auth.store';
 import { useColors } from '../hooks/useColors';
+import { useTranslation } from '../hooks/useTranslation';
 
-function timeAgo(iso: string): string {
-  const diff = Date.now() - new Date(iso).getTime();
-  const m = Math.floor(diff / 60000);
-  if (m < 1) return 'ahora';
-  if (m < 60) return `${m}m`;
-  const h = Math.floor(m / 60);
-  if (h < 24) return `${h}h`;
-  const d = Math.floor(h / 24);
-  if (d < 7) return `${d}d`;
-  return `${Math.floor(d / 7)}sem`;
-}
-
-function textoNotif(tipo: TipoNotificacion, nombre: string): string {
-  switch (tipo) {
-    case 'LIKE':           return `${nombre} le dio like a tu publicación`;
-    case 'COMENTARIO':     return `${nombre} comentó en tu publicación`;
-    case 'SEGUIDOR':       return `${nombre} empezó a seguirte`;
-    case 'SOLICITUD':      return `${nombre} te envió una solicitud de cita`;
-    case 'VERIFICACION':   return 'Tu imagen no ha pasado el filtro de contenido y será revisada por un administrador.';
-    case 'REVISION_ADMIN': return `${nombre} ha publicado una imagen que requiere revisión de moderación.`;
-    case 'APROBADA':       return 'Tu publicación ha sido revisada y aprobada por el administrador.';
-    case 'RECHAZADA':      return 'Tu publicación no ha superado la revisión y ha sido eliminada.';
-  }
-}
 
 export default function NotificacionesScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
+
+  const timeAgo = (iso: string): string => {
+    const diff = Date.now() - new Date(iso).getTime();
+    const m = Math.floor(diff / 60000);
+    if (m < 1) return t('notif_time_now');
+    if (m < 60) return `${m}m`;
+    const h = Math.floor(m / 60);
+    if (h < 24) return `${h}h`;
+    const d = Math.floor(h / 24);
+    if (d < 7) return `${d}d`;
+    return `${Math.floor(d / 7)}sem`;
+  };
+
+  const textoNotif = (tipo: TipoNotificacion, nombre: string): string => {
+    switch (tipo) {
+      case 'LIKE':           return t('notif_like', { nombre });
+      case 'COMENTARIO':     return t('notif_comment', { nombre });
+      case 'SEGUIDOR':       return t('notif_follow', { nombre });
+      case 'SOLICITUD':      return t('notif_request', { nombre });
+      case 'VERIFICACION':   return t('notif_filter');
+      case 'REVISION_ADMIN': return t('notif_review_admin', { nombre });
+      case 'APROBADA':       return t('notif_approved');
+      case 'RECHAZADA':      return t('notif_rejected');
+    }
+  };
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     header: {
@@ -196,9 +199,9 @@ export default function NotificacionesScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name="arrow-back" size={24} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.title}>Notificaciones</Text>
+        <Text style={styles.title}>{t('notif_title')}</Text>
         <TouchableOpacity onPress={marcarTodasLeidas} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
-          <Text style={styles.markAll}>Todo leído</Text>
+          <Text style={styles.markAll}>{t('notif_mark_read')}</Text>
         </TouchableOpacity>
       </View>
 
@@ -217,7 +220,7 @@ export default function NotificacionesScreen() {
           ListEmptyComponent={
             <View style={styles.center}>
               <Ionicons name="notifications-off-outline" size={48} color={Colors.textMuted} />
-              <Text style={styles.emptyText}>Sin notificaciones aún</Text>
+              <Text style={styles.emptyText}>{t('notif_empty')}</Text>
             </View>
           }
           ItemSeparatorComponent={() => <View style={styles.separator} />}

@@ -16,6 +16,7 @@ import { publicacionesService } from '../services/publicaciones.service';
 import { Publicacion } from '../types/publicacion.types';
 import { useAuthStore } from '../store/auth.store';
 import { useColors } from '../hooks/useColors';
+import { useTranslation } from '../hooks/useTranslation';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 2;
@@ -23,6 +24,7 @@ const GRID_TILE = (SCREEN_WIDTH - GRID_GAP * 2) / 3;
 
 export default function GuardadosScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -78,7 +80,7 @@ export default function GuardadosScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name="chevron-back" size={26} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Guardados</Text>
+        <Text style={styles.headerTitle}>{t('saved_title')}</Text>
         <View style={{ width: 26 }} />
       </View>
 
@@ -107,12 +109,8 @@ export default function GuardadosScreen() {
           ListEmptyComponent={
             <View style={styles.empty}>
               <Ionicons name="ribbon-outline" size={56} color={Colors.textMuted} />
-              <Text style={styles.emptyTitle}>Sin guardados</Text>
-              <Text style={styles.emptySub}>
-                Toca el icono{' '}
-                <Ionicons name="ribbon-outline" size={13} color={Colors.textMuted} />{' '}
-                en cualquier publicación para guardarla aquí.
-              </Text>
+              <Text style={styles.emptyTitle}>{t('saved_empty')}</Text>
+              <Text style={styles.emptySub}>{t('saved_empty_sub')}</Text>
             </View>
           }
           showsVerticalScrollIndicator={false}

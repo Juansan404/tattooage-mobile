@@ -177,8 +177,12 @@ export default function RegisterScreen() {
 
     try {
       setLoading(true);
-      await register({ nombre: nombre.trim(), apellidos: apellidos.trim() || undefined, email: email.trim(), password, rol });
-      router.replace('/(tabs)/feed');
+      const result = await register({ nombre: nombre.trim(), apellidos: apellidos.trim() || undefined, email: email.trim(), password, rol });
+      if (result.estadoRegistro === 'PENDIENTE') {
+        router.replace({ pathname: '/espera-aprobacion', params: { email: result.email } });
+      } else {
+        router.replace('/(tabs)/feed');
+      }
     } catch (error: any) {
       const mensaje =
         error?.response?.status === 409

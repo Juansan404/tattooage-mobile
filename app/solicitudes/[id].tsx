@@ -16,9 +16,11 @@ import { conversacionesService } from '../../services/conversaciones.service';
 import { SolicitudCita, EstadoSolicitud } from '../../types/solicitud.types';
 import { useAuthStore } from '../../store/auth.store';
 import { useColors } from '../../hooks/useColors';
+import { useTranslation } from '../../hooks/useTranslation';
 
 export default function DetalleSolicitudScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const ESTADO_COLORS: Record<EstadoSolicitud, string> = {
     Pendiente: Colors.warning,
     Aceptada: Colors.success,
@@ -216,13 +218,13 @@ export default function DetalleSolicitudScreen() {
                 style={styles.acceptBtn}
                 onPress={() => handleCambiarEstado('Aceptada')}
               >
-                <Text style={styles.acceptBtnText}>Aceptar</Text>
+                <Text style={styles.acceptBtnText}>{t('sol_accept')}</Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={styles.rejectBtn}
                 onPress={() => handleCambiarEstado('Rechazada')}
               >
-                <Text style={styles.rejectBtnText}>Rechazar</Text>
+                <Text style={styles.rejectBtnText}>{t('sol_reject')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -236,7 +238,7 @@ export default function DetalleSolicitudScreen() {
                 )
               }
             >
-              <Text style={styles.scheduleBtnText}>Programar cita</Text>
+              <Text style={styles.scheduleBtnText}>{t('sol_schedule')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -253,9 +255,9 @@ export default function DetalleSolicitudScreen() {
             <>
               <Ionicons name="chatbubble-outline" size={20} color={Colors.text} />
               <Text style={styles.chatBtnText}>
-                Abrir chat con {esArtista
-                  ? (solicitud.cliente?.nombre ?? 'el cliente')
-                  : (solicitud.artista?.nombre ?? 'el artista')}
+                {t('sol_open_chat')} {esArtista
+                  ? (solicitud.cliente?.nombre ?? t('sol_the_client'))
+                  : (solicitud.artista?.nombre ?? t('sol_the_artist'))}
               </Text>
             </>
           )}

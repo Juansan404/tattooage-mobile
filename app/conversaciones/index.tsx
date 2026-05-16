@@ -3,6 +3,7 @@ import {
   View,
   Text,
   FlatList,
+  ImageBackground,
   StyleSheet,
   TouchableOpacity,
   Image,
@@ -17,6 +18,7 @@ import { conversacionesService } from '../../services/conversaciones.service';
 import { Conversacion } from '../../types/conversacion.types';
 import { useAuthStore } from '../../store/auth.store';
 import { useColors } from '../../hooks/useColors';
+import { useThemeStore } from '../../store/theme.store';
 
 export default function ConversacionesScreen() {
   const Colors = useColors();
@@ -31,6 +33,7 @@ export default function ConversacionesScreen() {
       paddingVertical: 12,
       borderBottomWidth: 0.5,
       borderBottomColor: Colors.border,
+      backgroundColor: Colors.background,
     },
     headerTitle: { fontSize: 17, fontWeight: '700', color: Colors.text },
     convItem: {
@@ -57,6 +60,11 @@ export default function ConversacionesScreen() {
     emptyTitle: { fontSize: 17, fontWeight: '700', color: Colors.text },
     emptySub: { fontSize: 13, color: Colors.textSecondary, textAlign: 'center', lineHeight: 18 },
   });
+
+  const { isDark } = useThemeStore();
+  const bgSrc = isDark
+    ? require('../../assets/darkmode_background.jpg')
+    : require('../../assets/lightmode_background.jpg');
 
   const router = useRouter();
   const { idUsuario } = useAuthStore();
@@ -113,7 +121,8 @@ export default function ConversacionesScreen() {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ImageBackground source={bgSrc} style={styles.container} resizeMode="cover">
+    <SafeAreaView style={{ flex: 1 }}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()}>
           <Ionicons name="chevron-back" size={26} color={Colors.text} />
@@ -175,5 +184,6 @@ export default function ConversacionesScreen() {
         />
       )}
     </SafeAreaView>
+    </ImageBackground>
   );
 }

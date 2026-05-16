@@ -76,6 +76,11 @@ export const publicacionesService = {
     return response.data;
   },
 
+  async getByUsuario(idUsuario: number): Promise<Publicacion[]> {
+    const response = await api.get<Publicacion[]>(`/publicaciones/usuario/${idUsuario}`);
+    return response.data;
+  },
+
   async getGuardadas(idUsuario: number): Promise<Publicacion[]> {
     const response = await api.get<Publicacion[]>(`/publicaciones/guardadas/${idUsuario}`);
     return response.data;

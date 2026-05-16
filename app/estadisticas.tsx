@@ -16,6 +16,7 @@ import { publicacionesService } from '../services/publicaciones.service';
 import { solicitudesService } from '../services/solicitudes.service';
 import { citasService } from '../services/citas.service';
 import { useColors } from '../hooks/useColors';
+import { useTranslation } from '../hooks/useTranslation';
 
 interface Stats {
   publicaciones: number;
@@ -31,6 +32,7 @@ interface Stats {
 
 export default function EstadisticasScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     header: {
@@ -109,7 +111,7 @@ export default function EstadisticasScreen() {
         <TouchableOpacity onPress={() => router.back()} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
           <Ionicons name="chevron-back" size={26} color={Colors.text} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Estadísticas</Text>
+        <Text style={styles.headerTitle}>{t('stats_title')}</Text>
         <View style={{ width: 26 }} />
       </View>
 
@@ -120,71 +122,71 @@ export default function EstadisticasScreen() {
       ) : !stats ? (
         <View style={styles.center}>
           <Ionicons name="alert-circle-outline" size={48} color={Colors.textMuted} />
-          <Text style={{ color: Colors.textMuted }}>No se pudieron cargar las estadísticas.</Text>
+          <Text style={{ color: Colors.textMuted }}>{t('stats_error')}</Text>
         </View>
       ) : (
         <ScrollView contentContainerStyle={styles.scroll} showsVerticalScrollIndicator={false}>
 
-          <Text style={styles.sectionTitle}>Publicaciones</Text>
+          <Text style={styles.sectionTitle}>{t('stats_posts')}</Text>
           <View style={styles.row}>
             <View style={[styles.card, styles.cardAccent]}>
               <Ionicons name="images-outline" size={22} color={Colors.primary} />
               <Text style={[styles.cardNumber, styles.cardNumberAccent]}>{stats.publicaciones}</Text>
-              <Text style={styles.cardLabel}>publicaciones</Text>
+              <Text style={styles.cardLabel}>{t('stats_posts_label')}</Text>
             </View>
             <View style={[styles.card, styles.cardAccent]}>
               <Ionicons name="heart-outline" size={22} color={Colors.primary} />
               <Text style={[styles.cardNumber, styles.cardNumberAccent]}>{stats.likesTotales.toLocaleString('es-ES')}</Text>
-              <Text style={styles.cardLabel}>likes totales</Text>
+              <Text style={styles.cardLabel}>{t('stats_likes')}</Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Comunidad</Text>
+          <Text style={styles.sectionTitle}>{t('stats_community')}</Text>
           <View style={styles.row}>
             <View style={styles.card}>
               <Ionicons name="people-outline" size={22} color={Colors.textSecondary} />
               <Text style={styles.cardNumber}>{stats.seguidores}</Text>
-              <Text style={styles.cardLabel}>seguidores</Text>
+              <Text style={styles.cardLabel}>{t('stats_followers')}</Text>
             </View>
             <View style={styles.card}>
               <Ionicons name="person-add-outline" size={22} color={Colors.textSecondary} />
               <Text style={styles.cardNumber}>{stats.seguidos}</Text>
-              <Text style={styles.cardLabel}>seguidos</Text>
+              <Text style={styles.cardLabel}>{t('stats_following')}</Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Solicitudes recibidas</Text>
+          <Text style={styles.sectionTitle}>{t('stats_requests')}</Text>
           <View style={styles.row}>
             <View style={styles.card}>
               <Ionicons name="mail-outline" size={22} color={Colors.textSecondary} />
               <Text style={styles.cardNumber}>{stats.solicitudesTotal}</Text>
-              <Text style={styles.cardLabel}>en total</Text>
+              <Text style={styles.cardLabel}>{t('stats_total')}</Text>
             </View>
             <View style={styles.card}>
               <Ionicons name="time-outline" size={22} color={Colors.textSecondary} />
               <Text style={styles.cardNumber}>{stats.solicitudesPendientes}</Text>
-              <Text style={styles.cardLabel}>pendientes</Text>
+              <Text style={styles.cardLabel}>{t('stats_pending')}</Text>
             </View>
             <View style={styles.card}>
               <Ionicons name="checkmark-circle-outline" size={22} color={Colors.success} />
               <Text style={[styles.cardNumber, { color: Colors.success }]}>{stats.solicitudesAceptadas}</Text>
-              <Text style={styles.cardLabel}>aceptadas</Text>
+              <Text style={styles.cardLabel}>{t('stats_accepted')}</Text>
             </View>
           </View>
 
-          <Text style={styles.sectionTitle}>Citas</Text>
+          <Text style={styles.sectionTitle}>{t('stats_appointments')}</Text>
           <View style={styles.row}>
             <View style={styles.card}>
               <Ionicons name="calendar-outline" size={22} color={Colors.textSecondary} />
               <Text style={styles.cardNumber}>{stats.citasTotal}</Text>
-              <Text style={styles.cardLabel}>en total</Text>
+              <Text style={styles.cardLabel}>{t('stats_total')}</Text>
             </View>
             <View style={[styles.card, stats.citasCompletadas > 0 && styles.cardAccent]}>
               <Ionicons name="ribbon-outline" size={22} color={stats.citasCompletadas > 0 ? Colors.primary : Colors.textSecondary} />
               <Text style={[styles.cardNumber, stats.citasCompletadas > 0 && styles.cardNumberAccent]}>
                 {stats.citasCompletadas}
               </Text>
-              <Text style={styles.cardLabel}>completadas</Text>
+              <Text style={styles.cardLabel}>{t('stats_completed')}</Text>
             </View>
           </View>
 

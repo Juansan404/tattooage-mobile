@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { AuthResponse, Rol } from '../types/usuario.types';
 import { authService } from '../services/auth.service';
+import api from '../services/api';
 
 interface AuthState {
   token: string | null;
@@ -10,9 +11,8 @@ interface AuthState {
   isAuthenticated: boolean;
   isLoading: boolean;
 
-  // Acciones
   login: (email: string, password: string) => Promise<void>;
-  register: (data: { email: string; password: string; nombre: string; apellidos?: string; rol: Rol }) => Promise<void>;
+  register: (data: { email: string; password: string; nombre: string; apellidos?: string; rol: Rol }) => Promise<AuthResponse>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   setSession: (data: AuthResponse) => void;
@@ -51,14 +51,20 @@ export const useAuthStore = create<AuthState>((set) => ({
 
   register: async (formData) => {
     const data = await authService.register(formData);
-    set({
-      token: data.token,
-      idUsuario: data.idUsuario,
-      email: data.email,
-      rol: data.rol,
-      isAuthenticated: true,
-      isLoading: false,
-    });
+    if (data.estadoRegistro === 'ACTIVO') {
+      set({
+        token: data.token,
+        idUsuario: data.idUsuario,
+        email: data.email,
+        rol: data.rol,
+        isAuthenticated: true,
+        isLoading: false,
+      });
+    } else {
+      // PENDIENTE: guardar email para polling, no autenticar
+      set({ email: data.email, idUsuario: data.idUsuario, isLoading: false });
+    }
+    return data;
   },
 
   logout: async () => {
@@ -76,7 +82,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   restoreSession: async () => {
     set({ isLoading: true });
     const session = await authService.getStoredSession();
-    if (session) {
+    if (session && session.token) {
       set({
         token: session.token,
         idUsuario: session.idUsuario,
@@ -85,6 +91,17 @@ export const useAuthStore = create<AuthState>((set) => ({
         isAuthenticated: true,
         isLoading: false,
       });
+      try {
+        const res = await api.get<{ rol: string }>(`/usuarios/${session.idUsuario}`);
+        const rolServidor = res.data?.rol as Rol | undefined;
+        if (rolServidor && rolServidor !== session.rol) {
+          const updatedSession = { ...session, rol: rolServidor };
+          await authService.saveSession(updatedSession);
+          set({ rol: rolServidor });
+        }
+      } catch {
+        // Si falla la red, seguimos con el rol guardado
+      }
     } else {
       set({ isLoading: false });
     }

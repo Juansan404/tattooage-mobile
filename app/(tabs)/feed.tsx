@@ -2,6 +2,8 @@ import { useEffect, useState, useCallback, useRef } from 'react';
 import {
   View,
   Text,
+  Image,
+  ImageBackground,
   FlatList,
   StyleSheet,
   RefreshControl,
@@ -16,13 +18,16 @@ import { publicacionesService } from '../../services/publicaciones.service';
 import { notificacionesService } from '../../services/notificaciones.service';
 import { Publicacion } from '../../types/publicacion.types';
 import { useAuthStore } from '../../store/auth.store';
+import { useThemeStore } from '../../store/theme.store';
 import PostCard from '../../components/feed/PostCard';
 import { useColors } from '../../hooks/useColors';
+import { useTranslation } from '../../hooks/useTranslation';
 
 const PAGE_SIZE = 15;
 
 export default function FeedScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 24 },
@@ -34,6 +39,7 @@ export default function FeedScreen() {
       paddingVertical: 10,
       borderBottomWidth: 0.5,
       borderBottomColor: Colors.border,
+      backgroundColor: Colors.background,
     },
     headerLogo: {
       fontSize: 26,
@@ -96,6 +102,14 @@ export default function FeedScreen() {
     retryText: { color: Colors.white, fontWeight: '700', fontSize: 14 },
   });
 
+  const { isDark } = useThemeStore();
+  const logoSrc = isDark
+    ? require('../../assets/logo_black.png')
+    : require('../../assets/logo.png');
+  const bgSrc = isDark
+    ? require('../../assets/darkmode_background.jpg')
+    : require('../../assets/lightmode_background.jpg');
+
   const router = useRouter();
   const { idUsuario } = useAuthStore();
   const [publicaciones, setPublicaciones] = useState<Publicacion[]>([]);
@@ -126,7 +140,7 @@ export default function FeedScreen() {
       setHasMore(!isLast);
       nextPage.current = page + 1;
     } catch {
-      setError('No se pudo cargar el feed. Verifica tu conexión.');
+      setError(t('feed_error'));
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -165,14 +179,18 @@ export default function FeedScreen() {
   }
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ImageBackground source={bgSrc} style={styles.container} resizeMode="cover">
+    <SafeAreaView style={{ flex: 1 }}>
       <StatusBar barStyle="light-content" backgroundColor={Colors.background} />
 
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.headerLogo}>
-          Tattoo<Text style={styles.headerLogoAccent}>Age</Text>
-        </Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+          <Image source={logoSrc} style={{ width: 34, height: 34 }} resizeMode="contain" />
+          <Text style={styles.headerLogo}>
+            Tattoo<Text style={styles.headerLogoAccent}>Age</Text>
+          </Text>
+        </View>
         <View style={styles.headerIcons}>
           <TouchableOpacity
             style={styles.headerIcon}
@@ -200,7 +218,7 @@ export default function FeedScreen() {
         <View style={styles.center}>
           <Text style={styles.errorText}>{error}</Text>
           <TouchableOpacity style={styles.retryBtn} onPress={() => cargarPagina(true)}>
-            <Text style={styles.retryText}>Reintentar</Text>
+            <Text style={styles.retryText}>{t('feed_retry')}</Text>
           </TouchableOpacity>
         </View>
       ) : (
@@ -224,7 +242,7 @@ export default function FeedScreen() {
                 <ActivityIndicator size="small" color={Colors.primary} />
               </View>
             ) : !hasMore && publicaciones.length > 0 ? (
-              <Text style={styles.footerEnd}>— Ya lo has visto todo —</Text>
+              <Text style={styles.footerEnd}>{t('feed_end')}</Text>
             ) : null
           }
           contentContainerStyle={
@@ -232,10 +250,8 @@ export default function FeedScreen() {
           }
           ListEmptyComponent={
             <View style={styles.emptyInner}>
-              <Text style={styles.emptyTitle}>Aún no hay publicaciones</Text>
-              <Text style={styles.emptySubtext}>
-                Sigue a artistas para ver su trabajo aquí.
-              </Text>
+              <Text style={styles.emptyTitle}>{t('feed_empty')}</Text>
+              <Text style={styles.emptySubtext}>{t('feed_empty_sub')}</Text>
             </View>
           }
           showsVerticalScrollIndicator={false}
@@ -243,5 +259,6 @@ export default function FeedScreen() {
         />
       )}
     </SafeAreaView>
+    </ImageBackground>
   );
 }

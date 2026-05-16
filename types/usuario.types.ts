@@ -22,27 +22,33 @@ export interface PerfilArtista {
   disponible: boolean;
   precioHora?: number;
   instagram?: string;
+  estudio?: Estudio;
   creadoEn?: string;
 }
 
 export interface Estudio {
   idEstudio: number;
   nombre: string;
+  descripcion?: string;
   direccion?: string;
   ciudad?: string;
   telefono?: string;
   email?: string;
   web?: string;
   instagram?: string;
-  logoUrl?: string;
+  localizacion?: string;
+  fotoPortada?: string;
 }
+
+export type EstadoRegistro = 'ACTIVO' | 'PENDIENTE' | 'RECHAZADO';
 
 // Respuesta del login/register
 export interface AuthResponse {
-  token: string;
+  token: string | null;
   idUsuario: number;
   email: string;
   rol: Rol;
+  estadoRegistro: EstadoRegistro;
 }
 
 export interface LoginRequest {

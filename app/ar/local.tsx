@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -15,35 +15,27 @@ import {
 import { CameraView, CameraType, useCameraPermissions } from 'expo-camera';
 import * as MediaLibrary from 'expo-media-library';
 import { captureRef } from 'react-native-view-shot';
-import Svg, { Defs, ClipPath, Polygon, Image as SvgImage } from 'react-native-svg';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { publicacionesService } from '../../services/publicaciones.service';
 
 const { width: W, height: H } = Dimensions.get('window');
 const BASE_SIZE = W * 0.45;
 
-type Pt = { x: number; y: number };
-
-export default function ARScreen() {
-  const { id, puntos } = useLocalSearchParams<{ id: string; puntos?: string }>();
+export default function ARLocalScreen() {
+  const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
   const router = useRouter();
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions({ writeOnly: true });
 
-  const [fotoUrl, setFotoUrl] = useState<string | null>(null);
-  const [loadingPub, setLoadingPub] = useState(true);
   const [facing, setFacing] = useState<CameraType>('back');
   const [capturing, setCapturing] = useState(false);
-
   const [scale, setScale] = useState(1.0);
   const [opacity, setOpacity] = useState(0.85);
   const [rotation, setRotation] = useState(0);
 
   const viewRef = useRef<View>(null);
 
-  // Animated position — smooth native drag
   const pan = useRef(
     new Animated.ValueXY({ x: W / 2 - BASE_SIZE / 2, y: H / 2 - BASE_SIZE / 2 })
   ).current;
@@ -63,15 +55,6 @@ export default function ARScreen() {
       onPanResponderTerminate: () => { pan.flattenOffset(); },
     })
   ).current;
-
-  const clipPoints: Pt[] | null = puntos ? JSON.parse(puntos) : null;
-
-  useEffect(() => {
-    publicacionesService.getById(Number(id))
-      .then((pub) => setFotoUrl(pub.fotoUrl))
-      .catch(() => { Alert.alert('Error', 'No se pudo cargar la imagen.'); router.back(); })
-      .finally(() => setLoadingPub(false));
-  }, [id]);
 
   const handleCapture = async () => {
     if (capturing) return;
@@ -111,64 +94,43 @@ export default function ARScreen() {
     );
   }
 
-  if (loadingPub) {
-    return <View style={s.bg}><ActivityIndicator size="large" color="#C0392B" /></View>;
+  if (!imageUri) {
+    return (
+      <View style={s.bg}>
+        <Text style={{ color: '#fff' }}>No se proporcionó imagen.</Text>
+      </View>
+    );
   }
 
   const tattooSize = BASE_SIZE * scale;
-
-  const svgClipPoints = clipPoints
-    ? clipPoints.map(p => `${p.x * tattooSize},${p.y * tattooSize}`).join(' ')
-    : null;
 
   return (
     <View style={s.container}>
       <StatusBar hidden />
 
-      {/* Vista capturada */}
       <View style={s.container} ref={viewRef} collapsable={false}>
         <CameraView style={StyleSheet.absoluteFill} facing={facing} />
 
-        {/* Overlay arrastrable con Animated */}
-        {fotoUrl && (
-          <Animated.View
-            style={[
-              {
-                position: 'absolute',
-                width: tattooSize,
-                height: tattooSize,
-                opacity,
-                transform: [{ rotate: `${rotation}deg` }],
-              },
-              pan.getLayout(),
-            ]}
-            {...panResponder.panHandlers}
-          >
-            {svgClipPoints ? (
-              <Svg width={tattooSize} height={tattooSize} pointerEvents="none">
-                <Defs>
-                  <ClipPath id="tattoo">
-                    <Polygon points={svgClipPoints} />
-                  </ClipPath>
-                </Defs>
-                <SvgImage
-                  href={{ uri: fotoUrl }}
-                  x={0} y={0}
-                  width={tattooSize} height={tattooSize}
-                  preserveAspectRatio="xMidYMid slice"
-                  clipPath="url(#tattoo)"
-                />
-              </Svg>
-            ) : (
-              <Image
-                source={{ uri: fotoUrl }}
-                style={{ width: tattooSize, height: tattooSize, borderRadius: 8 }}
-                resizeMode="contain"
-                pointerEvents="none"
-              />
-            )}
-          </Animated.View>
-        )}
+        <Animated.View
+          style={[
+            {
+              position: 'absolute',
+              width: tattooSize,
+              height: tattooSize,
+              opacity,
+              transform: [{ rotate: `${rotation}deg` }],
+            },
+            pan.getLayout(),
+          ]}
+          {...panResponder.panHandlers}
+        >
+          <Image
+            source={{ uri: imageUri }}
+            style={{ width: tattooSize, height: tattooSize, borderRadius: 8 }}
+            resizeMode="contain"
+            pointerEvents="none"
+          />
+        </Animated.View>
       </View>
 
       {/* ── Barra superior ── */}
@@ -177,9 +139,7 @@ export default function ARScreen() {
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </TouchableOpacity>
         <View style={s.topHint}>
-          <Text style={s.hintText}>
-            {clipPoints ? 'Tatuaje delimitado' : 'Arrastra para posicionar'}
-          </Text>
+          <Text style={s.hintText}>Arrastra para posicionar</Text>
         </View>
         <TouchableOpacity style={s.iconBtn} onPress={() => setFacing(f => f === 'back' ? 'front' : 'back')}>
           <Ionicons name="camera-reverse-outline" size={26} color="#fff" />
@@ -191,10 +151,9 @@ export default function ARScreen() {
         <TouchableOpacity style={s.ctrlBtn} onPress={() => setRotation(r => (r - 15 + 360) % 360)}>
           <Ionicons name="refresh-outline" size={18} color="#fff" style={{ transform: [{ scaleX: -1 }] }} />
         </TouchableOpacity>
-        <TouchableOpacity style={s.delimBtn} onPress={() => router.push(`/ar/recortar/${id}`)}>
-          <Ionicons name="crop-outline" size={14} color="#fff" />
-          <Text style={s.delimBtnText}>{clipPoints ? 'Redelimitar' : 'Delimitar'}</Text>
-        </TouchableOpacity>
+        <View style={s.rotLabel}>
+          <Text style={s.rotLabelText}>{rotation}°</Text>
+        </View>
         <TouchableOpacity style={s.ctrlBtn} onPress={() => setRotation(r => (r + 15) % 360)}>
           <Ionicons name="refresh-outline" size={18} color="#fff" />
         </TouchableOpacity>
@@ -262,12 +221,11 @@ const s = StyleSheet.create({
     bottom: 130, left: 0, right: 0,
     flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 16,
   },
-  delimBtn: {
-    flexDirection: 'row', alignItems: 'center', gap: 6,
-    backgroundColor: 'rgba(192,57,43,0.75)',
-    paddingHorizontal: 18, paddingVertical: 8, borderRadius: 20,
+  rotLabel: {
+    paddingHorizontal: 16, paddingVertical: 8,
+    backgroundColor: 'rgba(0,0,0,0.4)', borderRadius: 20,
   },
-  delimBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
+  rotLabelText: { color: '#fff', fontSize: 13, fontWeight: '700' },
 
   bottomBar: {
     position: 'absolute', bottom: 0, left: 0, right: 0,

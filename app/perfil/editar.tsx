@@ -229,19 +229,20 @@ export default function EditarPerfilScreen() {
     }
     try {
       setGuardando(true);
-      const saves: Promise<any>[] = [
-        api.put(`/usuarios/${idUsuario}`, {
-          nombre: nombre.trim(),
-          apellidos: apellidos.trim() || null,
-          bio: bio.trim() || null,
-          avatar: avatar.trim() || null,
-          telefono: telefono.trim() || null,
-        }),
-      ];
+      await api.put(`/usuarios/${idUsuario}`, {
+        nombre: nombre.trim(),
+        apellidos: apellidos.trim() || null,
+        bio: bio.trim() || null,
+        avatar: avatar.trim() || null,
+        telefono: telefono.trim() || null,
+      });
       if (rol === 'ARTISTA' && idUsuario) {
-        saves.push(estilosService.updateArtista(idUsuario, misEstilos));
+        try {
+          await estilosService.updateArtista(idUsuario, misEstilos);
+        } catch {
+          // silencioso — el perfil principal sí se guardó
+        }
       }
-      await Promise.all(saves);
       Alert.alert('¡Guardado!', 'Tu perfil ha sido actualizado.', [
         { text: 'OK', onPress: () => router.back() },
       ]);

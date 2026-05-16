@@ -7,6 +7,7 @@ import {
   Alert,
   Modal,
   Image,
+  ImageBackground,
   FlatList,
   Dimensions,
   ActivityIndicator,
@@ -22,6 +23,8 @@ import { Publicacion } from '../../types/publicacion.types';
 import { useAuthStore } from '../../store/auth.store';
 import SeguidoresModal from '../../components/perfil/SeguidoresModal';
 import { useColors } from '../../hooks/useColors';
+import { useTranslation } from '../../hooks/useTranslation';
+import { useThemeStore } from '../../store/theme.store';
 
 const { width: SCREEN_WIDTH } = Dimensions.get('window');
 const GRID_GAP = 2;
@@ -29,6 +32,7 @@ const GRID_TILE = (SCREEN_WIDTH - GRID_GAP * 2) / 3;
 
 export default function PerfilScreen() {
   const Colors = useColors();
+  const { t } = useTranslation();
   const styles = StyleSheet.create({
     container: { flex: 1, backgroundColor: Colors.background },
     center: { flex: 1, justifyContent: 'center', alignItems: 'center' },
@@ -42,6 +46,7 @@ export default function PerfilScreen() {
       paddingVertical: 10,
       borderBottomWidth: 0.5,
       borderBottomColor: Colors.border,
+      backgroundColor: Colors.background,
     },
     headerUsername: {
       fontSize: 18,
@@ -60,6 +65,7 @@ export default function PerfilScreen() {
       paddingTop: 16,
       paddingBottom: 12,
       gap: 12,
+      backgroundColor: Colors.background,
     },
     avatarStatsRow: {
       flexDirection: 'row',
@@ -253,6 +259,11 @@ export default function PerfilScreen() {
     },
   });
 
+  const { isDark } = useThemeStore();
+  const bgSrc = isDark
+    ? require('../../assets/darkmode_background.jpg')
+    : require('../../assets/lightmode_background.jpg');
+
   const router = useRouter();
   const { idUsuario, rol, logout } = useAuthStore();
 
@@ -273,7 +284,7 @@ export default function PerfilScreen() {
         artistasService.getContadores(idUsuario),
       ];
       if (rol === 'ARTISTA' || rol === 'ADMIN') {
-        requests.push(publicacionesService.getFeed());
+        requests.push(publicacionesService.getByUsuario(idUsuario));
       } else {
         requests.push(publicacionesService.getGuardadas(idUsuario));
       }
@@ -282,7 +293,7 @@ export default function PerfilScreen() {
       setSeguidores(contadores.seguidores);
       setSeguidos(contadores.seguidos);
       if (rol === 'ARTISTA' || rol === 'ADMIN') {
-        setPublicaciones((pubs as Publicacion[]).filter((p) => p.usuario?.idUsuario === idUsuario));
+        setPublicaciones(pubs as Publicacion[]);
       } else {
         setGuardadas(pubs as Publicacion[]);
       }
@@ -369,30 +380,30 @@ export default function PerfilScreen() {
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>{publicaciones.length}</Text>
-                <Text style={styles.statLabel}>publicaciones</Text>
+                <Text style={styles.statLabel}>{t('profile_posts')}</Text>
               </View>
               <TouchableOpacity style={styles.statItem} onPress={() => setModalTipo('seguidores')} activeOpacity={0.7}>
                 <Text style={styles.statNumber}>{seguidores}</Text>
-                <Text style={styles.statLabel}>seguidores</Text>
+                <Text style={styles.statLabel}>{t('profile_followers')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.statItem} onPress={() => setModalTipo('seguidos')} activeOpacity={0.7}>
                 <Text style={styles.statNumber}>{seguidos}</Text>
-                <Text style={styles.statLabel}>seguidos</Text>
+                <Text style={styles.statLabel}>{t('profile_following')}</Text>
               </TouchableOpacity>
             </View>
           ) : (
             <View style={styles.statsRow}>
               <View style={styles.statItem}>
                 <Text style={styles.statNumber}>{guardadas.length}</Text>
-                <Text style={styles.statLabel}>guardados</Text>
+                <Text style={styles.statLabel}>{t('profile_saved_count')}</Text>
               </View>
               <TouchableOpacity style={styles.statItem} onPress={() => setModalTipo('seguidores')} activeOpacity={0.7}>
                 <Text style={styles.statNumber}>{seguidores}</Text>
-                <Text style={styles.statLabel}>seguidores</Text>
+                <Text style={styles.statLabel}>{t('profile_followers')}</Text>
               </TouchableOpacity>
               <TouchableOpacity style={styles.statItem} onPress={() => setModalTipo('seguidos')} activeOpacity={0.7}>
                 <Text style={styles.statNumber}>{seguidos}</Text>
-                <Text style={styles.statLabel}>seguidos</Text>
+                <Text style={styles.statLabel}>{t('profile_following')}</Text>
               </TouchableOpacity>
             </View>
           )}
@@ -419,7 +430,7 @@ export default function PerfilScreen() {
               style={styles.newPostBtn}
               onPress={() => router.push('/portfolio/nueva')}
             >
-              <Text style={styles.newPostBtnText}>+ Publicar</Text>
+              <Text style={styles.newPostBtnText}>{t('profile_publish')}</Text>
             </TouchableOpacity>
           )}
         </View>
@@ -430,7 +441,8 @@ export default function PerfilScreen() {
   );
 
   return (
-    <SafeAreaView style={styles.container}>
+    <ImageBackground source={bgSrc} style={styles.container} resizeMode="cover">
+    <SafeAreaView style={{ flex: 1 }}>
       {/* ── Header con username + menú ── */}
       <View style={styles.header}>
         <Text style={styles.headerUsername}>
@@ -470,20 +482,20 @@ export default function PerfilScreen() {
             rol === 'ARTISTA' || rol === 'ADMIN' ? (
               <View style={styles.emptyGrid}>
                 <Ionicons name="camera-outline" size={56} color={Colors.textMuted} />
-                <Text style={styles.emptyGridTitle}>Sin publicaciones</Text>
-                <Text style={styles.emptyGridSub}>Comparte tu primer trabajo.</Text>
+                <Text style={styles.emptyGridTitle}>{t('profile_empty_posts')}</Text>
+                <Text style={styles.emptyGridSub}>{t('profile_empty_posts_sub')}</Text>
                 <TouchableOpacity
                   style={styles.uploadBtn}
                   onPress={() => router.push('/portfolio/nueva')}
                 >
-                  <Text style={styles.uploadBtnText}>Subir foto</Text>
+                  <Text style={styles.uploadBtnText}>{t('profile_upload')}</Text>
                 </TouchableOpacity>
               </View>
             ) : (
               <View style={styles.emptyGrid}>
                 <Ionicons name="ribbon-outline" size={56} color={Colors.textMuted} />
-                <Text style={styles.emptyGridTitle}>Sin guardados</Text>
-                <Text style={styles.emptyGridSub}>Guarda publicaciones que te gusten para verlas aquí.</Text>
+                <Text style={styles.emptyGridTitle}>{t('profile_empty_saved')}</Text>
+                <Text style={styles.emptyGridSub}>{t('profile_empty_saved_sub')}</Text>
               </View>
             )
           }
@@ -505,14 +517,6 @@ export default function PerfilScreen() {
         <TouchableOpacity style={styles.menuBackdrop} activeOpacity={1} onPress={() => setMenuVisible(false)} />
         <View style={styles.menuSheet}>
           <View style={styles.menuHandle} />
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => { setMenuVisible(false); router.push('/perfil/editar'); }}
-          >
-            <Ionicons name="create-outline" size={22} color={Colors.text} />
-            <Text style={styles.menuItemText}>Editar perfil</Text>
-          </TouchableOpacity>
-          <View style={styles.menuDivider} />
           {(rol === 'ARTISTA' || rol === 'ADMIN') && (
             <>
               <TouchableOpacity
@@ -520,7 +524,7 @@ export default function PerfilScreen() {
                 onPress={() => { setMenuVisible(false); router.push('/estadisticas'); }}
               >
                 <Ionicons name="bar-chart-outline" size={22} color={Colors.text} />
-                <Text style={styles.menuItemText}>Estadísticas</Text>
+                <Text style={styles.menuItemText}>{t('menu_statistics')}</Text>
               </TouchableOpacity>
               <View style={styles.menuDivider} />
             </>
@@ -530,7 +534,23 @@ export default function PerfilScreen() {
             onPress={() => { setMenuVisible(false); router.push('/guardados'); }}
           >
             <Ionicons name="ribbon-outline" size={22} color={Colors.text} />
-            <Text style={styles.menuItemText}>Ver guardados</Text>
+            <Text style={styles.menuItemText}>{t('menu_saved')}</Text>
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => { setMenuVisible(false); router.push('/biblioteca-ar'); }}
+          >
+            <Ionicons name="camera-outline" size={22} color={Colors.text} />
+            <Text style={styles.menuItemText}>{t('menu_library_ar')}</Text>
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => { setMenuVisible(false); router.push('/perfil/editar'); }}
+          >
+            <Ionicons name="person-outline" size={22} color={Colors.text} />
+            <Text style={styles.menuItemText}>{t('settings_edit_profile')}</Text>
           </TouchableOpacity>
           <View style={styles.menuDivider} />
           <TouchableOpacity
@@ -538,15 +558,16 @@ export default function PerfilScreen() {
             onPress={() => { setMenuVisible(false); router.push('/ajustes'); }}
           >
             <Ionicons name="settings-outline" size={22} color={Colors.text} />
-            <Text style={styles.menuItemText}>Ajustes</Text>
+            <Text style={styles.menuItemText}>{t('menu_settings')}</Text>
           </TouchableOpacity>
           <View style={styles.menuDivider} />
           <TouchableOpacity style={styles.menuItem} onPress={() => { setMenuVisible(false); handleLogout(); }}>
             <Ionicons name="log-out-outline" size={22} color={Colors.error} />
-            <Text style={[styles.menuItemText, { color: Colors.error }]}>Cerrar sesión</Text>
+            <Text style={[styles.menuItemText, { color: Colors.error }]}>{t('menu_logout')}</Text>
           </TouchableOpacity>
         </View>
       </Modal>
     </SafeAreaView>
+    </ImageBackground>
   );
 }

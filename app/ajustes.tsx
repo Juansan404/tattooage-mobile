@@ -80,18 +80,6 @@ export default function AjustesScreen() {
         <Text style={s.headerTitle}>{t('settings_title')}</Text>
       </View>
 
-      {/* Cuenta */}
-      <View style={s.section}>
-        <Text style={s.sectionLabel}>{t('settings_account')}</Text>
-        <TouchableOpacity style={[s.row, s.rowSingle]} onPress={() => router.push('/perfil/editar')} activeOpacity={0.75}>
-          <View style={s.rowLeft}>
-            <Ionicons name="create-outline" size={22} color={Colors.primary} />
-            <Text style={s.rowText}>{t('settings_edit_profile')}</Text>
-          </View>
-          <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
-        </TouchableOpacity>
-      </View>
-
       {/* Apariencia */}
       <View style={s.section}>
         <Text style={s.sectionLabel}>{t('settings_appearance')}</Text>

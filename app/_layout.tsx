@@ -6,10 +6,13 @@ import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { PaperProvider, MD3DarkTheme, MD3LightTheme } from 'react-native-paper';
 import * as NavigationBar from 'expo-navigation-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { useAuthStore } from '../store/auth.store';
 import { useThemeStore } from '../store/theme.store';
 import { useLanguageStore } from '../store/language.store';
 import { ThemeTransitionContext } from '../context/ThemeTransitionContext';
+
+SplashScreen.preventAutoHideAsync();
 
 const DARK_BG  = '#0D0D0D';
 const LIGHT_BG = '#F7F7F7';

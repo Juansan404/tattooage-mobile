@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import {
   View,
   Text,
@@ -17,13 +17,22 @@ import * as MediaLibrary from 'expo-media-library';
 import { captureRef } from 'react-native-view-shot';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { arCapturasService } from '../../services/ar-capturas.service';
 
 const { width: W, height: H } = Dimensions.get('window');
 const BASE_SIZE = W * 0.45;
 
+function waitFrames(ms = 80): Promise<void> {
+  return new Promise(resolve =>
+    requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(resolve, ms)))
+  );
+}
+
 export default function ARLocalScreen() {
   const { imageUri } = useLocalSearchParams<{ imageUri: string }>();
   const router = useRouter();
+  const { bottom: bottomInset } = useSafeAreaInsets();
 
   const [cameraPermission, requestCameraPermission] = useCameraPermissions();
   const [mediaPermission, requestMediaPermission] = MediaLibrary.usePermissions({ writeOnly: true });
@@ -33,26 +42,65 @@ export default function ARLocalScreen() {
   const [scale, setScale] = useState(1.0);
   const [opacity, setOpacity] = useState(0.85);
   const [rotation, setRotation] = useState(0);
+  const [cameraSnapshot, setCameraSnapshot] = useState<string | null>(null);
 
-  const viewRef = useRef<View>(null);
+  const viewRef            = useRef<View>(null);
+  const cameraRef          = useRef<any>(null);
+  const snapshotLoadedRef  = useRef<(() => void) | null>(null);
+
+  const scaleRef        = useRef(1.0);
+  const isPinching      = useRef(false);
+  const pinchStartDist  = useRef(0);
+  const pinchStartScale = useRef(1.0);
+
+  useEffect(() => { scaleRef.current = scale; }, [scale]);
 
   const pan = useRef(
     new Animated.ValueXY({ x: W / 2 - BASE_SIZE / 2, y: H / 2 - BASE_SIZE / 2 })
   ).current;
 
+  function touchDist(touches: any[]) {
+    const dx = touches[0].pageX - touches[1].pageX;
+    const dy = touches[0].pageY - touches[1].pageY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
   const panResponder = useRef(
     PanResponder.create({
       onStartShouldSetPanResponder: () => true,
       onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        pan.setOffset({ x: (pan.x as any)._value, y: (pan.y as any)._value });
-        pan.setValue({ x: 0, y: 0 });
+      onPanResponderGrant: (evt) => {
+        if (evt.nativeEvent.touches.length >= 2) {
+          isPinching.current = true;
+          pinchStartDist.current = touchDist(evt.nativeEvent.touches);
+          pinchStartScale.current = scaleRef.current;
+        } else {
+          isPinching.current = false;
+          pan.setOffset({ x: (pan.x as any)._value, y: (pan.y as any)._value });
+          pan.setValue({ x: 0, y: 0 });
+        }
       },
-      onPanResponderMove: Animated.event([null, { dx: pan.x, dy: pan.y }], {
-        useNativeDriver: false,
-      }),
-      onPanResponderRelease: () => { pan.flattenOffset(); },
-      onPanResponderTerminate: () => { pan.flattenOffset(); },
+      onPanResponderMove: (evt, gestureState) => {
+        const touches = evt.nativeEvent.touches;
+        if (touches.length >= 2) {
+          if (!isPinching.current) {
+            isPinching.current = true;
+            pinchStartDist.current = touchDist(touches);
+            pinchStartScale.current = scaleRef.current;
+          } else {
+            const d = touchDist(touches);
+            const newScale = Math.max(0.3, Math.min(3,
+              pinchStartScale.current * (d / pinchStartDist.current)));
+            scaleRef.current = newScale;
+            setScale(parseFloat(newScale.toFixed(2)));
+          }
+        } else if (!isPinching.current) {
+          pan.x.setValue(gestureState.dx);
+          pan.y.setValue(gestureState.dy);
+        }
+      },
+      onPanResponderRelease:   () => { isPinching.current = false; pan.flattenOffset(); },
+      onPanResponderTerminate: () => { isPinching.current = false; pan.flattenOffset(); },
     })
   ).current;
 
@@ -67,11 +115,29 @@ export default function ARLocalScreen() {
     }
     try {
       setCapturing(true);
+      // 1. Tomar foto real con la cámara
+      const photo = await cameraRef.current.takePictureAsync({ quality: 1 });
+      // 2. Preparar promesa que se resuelve cuando el Image emita onLoad
+      const imageLoaded = new Promise<void>(resolve => {
+        snapshotLoadedRef.current = resolve;
+      });
+      // 3. Sustituir CameraView por Image con el frame capturado
+      setCameraSnapshot(photo.uri);
+      // 4. Esperar onLoad real (fallback 3s por si falla)
+      await Promise.race([imageLoaded, new Promise<void>(r => setTimeout(r, 3000))]);
+      await waitFrames(300);
+      // 5. Ahora sí captureRef puede ver el Image renderizado
       const uri = await captureRef(viewRef, { format: 'jpg', quality: 0.9 });
-      await MediaLibrary.saveToLibraryAsync(uri);
-      Alert.alert('Guardado', 'La foto se ha guardado en tu galería.');
-    } catch {
-      Alert.alert('Error', 'No se pudo guardar la foto.');
+      // 5. Restaurar cámara en vivo
+      setCameraSnapshot(null);
+      await Promise.all([
+        MediaLibrary.saveToLibraryAsync(uri),
+        arCapturasService.guardar(uri),
+      ]);
+      Alert.alert('Guardado', 'La foto se ha guardado en tu galería y en la Biblioteca AR.');
+    } catch (e) {
+      setCameraSnapshot(null);
+      Alert.alert('Error', 'No se pudo guardar la foto: ' + String(e));
     } finally {
       setCapturing(false);
     }
@@ -108,8 +174,18 @@ export default function ARLocalScreen() {
     <View style={s.container}>
       <StatusBar hidden />
 
-      <View style={s.container} ref={viewRef} collapsable={false}>
-        <CameraView style={StyleSheet.absoluteFill} facing={facing} />
+      {/* Área capturada: cámara (o snapshot) + tatuaje, sin controles UI */}
+      <View style={StyleSheet.absoluteFill} ref={viewRef} collapsable={false}>
+        {cameraSnapshot ? (
+          <Image
+            source={{ uri: cameraSnapshot }}
+            style={[StyleSheet.absoluteFill, { backgroundColor: '#000' }]}
+            resizeMode="cover"
+            onLoad={() => { snapshotLoadedRef.current?.(); snapshotLoadedRef.current = null; }}
+          />
+        ) : (
+          <CameraView ref={cameraRef} style={StyleSheet.absoluteFill} facing={facing} />
+        )}
 
         <Animated.View
           style={[
@@ -126,7 +202,7 @@ export default function ARLocalScreen() {
         >
           <Image
             source={{ uri: imageUri }}
-            style={{ width: tattooSize, height: tattooSize, borderRadius: 8 }}
+            style={{ width: tattooSize, height: tattooSize }}
             resizeMode="contain"
             pointerEvents="none"
           />
@@ -139,7 +215,7 @@ export default function ARLocalScreen() {
           <Ionicons name="chevron-back" size={26} color="#fff" />
         </TouchableOpacity>
         <View style={s.topHint}>
-          <Text style={s.hintText}>Arrastra para posicionar</Text>
+          <Text style={s.hintText}>Arrastra · Pellizca para escalar</Text>
         </View>
         <TouchableOpacity style={s.iconBtn} onPress={() => setFacing(f => f === 'back' ? 'front' : 'back')}>
           <Ionicons name="camera-reverse-outline" size={26} color="#fff" />
@@ -147,7 +223,7 @@ export default function ARLocalScreen() {
       </View>
 
       {/* ── Rotación ── */}
-      <View style={s.rotationBar} pointerEvents="box-none">
+      <View style={[s.rotationBar, { bottom: 130 + bottomInset }]} pointerEvents="box-none">
         <TouchableOpacity style={s.ctrlBtn} onPress={() => setRotation(r => (r - 15 + 360) % 360)}>
           <Ionicons name="refresh-outline" size={18} color="#fff" style={{ transform: [{ scaleX: -1 }] }} />
         </TouchableOpacity>
@@ -160,7 +236,7 @@ export default function ARLocalScreen() {
       </View>
 
       {/* ── Controles inferiores ── */}
-      <View style={s.bottomBar} pointerEvents="box-none">
+      <View style={[s.bottomBar, { paddingBottom: 20 + bottomInset }]} pointerEvents="box-none">
         <View style={s.controlGroup}>
           <Text style={s.controlLabel}>Opacidad</Text>
           <View style={s.controlRow}>

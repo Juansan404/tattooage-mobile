@@ -9,12 +9,15 @@ import {
   Dimensions,
   Alert,
   ActivityIndicator,
+  Modal,
+  ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import * as ImagePicker from 'expo-image-picker';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { publicacionesService } from '../services/publicaciones.service';
+import { arCapturasService, ARCaptura } from '../services/ar-capturas.service';
 import { useAuthStore } from '../store/auth.store';
 import { useColors } from '../hooks/useColors';
 import { useTranslation } from '../hooks/useTranslation';
@@ -30,14 +33,20 @@ export default function BibliotecaARScreen() {
   const router = useRouter();
   const { idUsuario } = useAuthStore();
 
-  const [guardadas, setGuardadas] = useState<Publicacion[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [guardadas,  setGuardadas]  = useState<Publicacion[]>([]);
+  const [capturas,   setCapturas]   = useState<ARCaptura[]>([]);
+  const [loading,    setLoading]    = useState(true);
+  const [preview,    setPreview]    = useState<ARCaptura | null>(null);
 
   const cargar = useCallback(async () => {
     if (!idUsuario) return;
     try {
-      const pubs = await publicacionesService.getGuardadas(idUsuario);
+      const [pubs, caps] = await Promise.all([
+        publicacionesService.getGuardadas(idUsuario),
+        arCapturasService.listar(),
+      ]);
       setGuardadas(pubs);
+      setCapturas(caps);
     } catch {
       // silencioso
     } finally {
@@ -46,6 +55,20 @@ export default function BibliotecaARScreen() {
   }, [idUsuario]);
 
   useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
+
+  const handleEliminarCaptura = (item: ARCaptura) => {
+    Alert.alert('Eliminar captura', '¿Eliminar esta foto AR?', [
+      { text: 'Cancelar', style: 'cancel' },
+      {
+        text: 'Eliminar', style: 'destructive',
+        onPress: async () => {
+          await arCapturasService.eliminar(item.id);
+          setCapturas((prev) => prev.filter((c) => c.id !== item.id));
+          if (preview?.id === item.id) setPreview(null);
+        },
+      },
+    ]);
+  };
 
   const handleGaleria = async () => {
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -80,37 +103,76 @@ export default function BibliotecaARScreen() {
         <Ionicons name="chevron-forward" size={18} color={Colors.textMuted} />
       </TouchableOpacity>
 
-      <Text style={[s.sectionLabel, { color: Colors.textMuted }]}>{t('ar_library_saved_section')}</Text>
-
       {loading ? (
         <ActivityIndicator size="large" color={Colors.primary} style={{ marginTop: 40 }} />
-      ) : guardadas.length === 0 ? (
-        <View style={s.empty}>
-          <Ionicons name="bookmark-outline" size={52} color={Colors.textMuted} />
-          <Text style={[s.emptyTitle, { color: Colors.text }]}>{t('ar_library_empty')}</Text>
-          <Text style={[s.emptySub, { color: Colors.textSecondary }]}>{t('ar_library_empty_sub')}</Text>
-        </View>
       ) : (
-        <FlatList
-          data={guardadas}
-          keyExtractor={(item) => String(item.idPublicacion)}
-          numColumns={3}
-          columnWrapperStyle={{ gap: GRID_GAP }}
-          ItemSeparatorComponent={() => <View style={{ height: GRID_GAP }} />}
-          renderItem={({ item }) => (
-            <TouchableOpacity
-              activeOpacity={0.8}
-              onPress={() => router.push(`/ar/${item.idPublicacion}`)}
-            >
-              <Image source={{ uri: item.fotoUrl }} style={s.tile} resizeMode="cover" />
-              <View style={s.arBadge}>
-                <Ionicons name="camera-outline" size={11} color="#fff" />
+        <ScrollView showsVerticalScrollIndicator={false}>
+          {/* ── Mis capturas AR ── */}
+          {capturas.length > 0 && (
+            <>
+              <Text style={[s.sectionLabel, { color: Colors.textMuted }]}>Mis capturas AR</Text>
+              <View style={s.grid}>
+                {capturas.map((item) => (
+                  <TouchableOpacity
+                    key={item.id}
+                    activeOpacity={0.8}
+                    onPress={() => setPreview(item)}
+                    onLongPress={() => handleEliminarCaptura(item)}
+                  >
+                    <Image source={{ uri: item.uri }} style={s.tile} resizeMode="cover" />
+                  </TouchableOpacity>
+                ))}
               </View>
-            </TouchableOpacity>
+            </>
           )}
-          showsVerticalScrollIndicator={false}
-        />
+
+          {/* ── Publicaciones guardadas ── */}
+          <Text style={[s.sectionLabel, { color: Colors.textMuted }]}>{t('ar_library_saved_section')}</Text>
+          {guardadas.length === 0 ? (
+            <View style={s.empty}>
+              <Ionicons name="bookmark-outline" size={52} color={Colors.textMuted} />
+              <Text style={[s.emptyTitle, { color: Colors.text }]}>{t('ar_library_empty')}</Text>
+              <Text style={[s.emptySub, { color: Colors.textSecondary }]}>{t('ar_library_empty_sub')}</Text>
+            </View>
+          ) : (
+            <View style={s.grid}>
+              {guardadas.map((item) => (
+                <TouchableOpacity
+                  key={item.idPublicacion}
+                  activeOpacity={0.8}
+                  onPress={() => router.push(`/ar/${item.idPublicacion}`)}
+                >
+                  <Image source={{ uri: item.fotoUrl }} style={s.tile} resizeMode="cover" />
+                  <View style={s.arBadge}>
+                    <Ionicons name="camera-outline" size={11} color="#fff" />
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </ScrollView>
       )}
+
+      {/* Preview captura a pantalla completa */}
+      <Modal visible={!!preview} transparent animationType="fade" onRequestClose={() => setPreview(null)}>
+        <View style={s.previewOverlay}>
+          <TouchableOpacity style={s.previewClose} onPress={() => setPreview(null)}>
+            <Ionicons name="close" size={28} color="#fff" />
+          </TouchableOpacity>
+          {preview && (
+            <>
+              <Image source={{ uri: preview.uri }} style={s.previewImg} resizeMode="contain" />
+              <Text style={s.previewDate}>
+                {new Date(preview.creadoEn).toLocaleDateString('es-ES', { day: '2-digit', month: 'long', year: 'numeric' })}
+              </Text>
+              <TouchableOpacity style={s.previewDelete} onPress={() => handleEliminarCaptura(preview)}>
+                <Ionicons name="trash-outline" size={18} color="#fff" />
+                <Text style={s.previewDeleteText}>Eliminar</Text>
+              </TouchableOpacity>
+            </>
+          )}
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -135,6 +197,8 @@ const s = StyleSheet.create({
     marginHorizontal: 16, marginTop: 20, marginBottom: 10,
   },
 
+  grid: { flexDirection: 'row', flexWrap: 'wrap', gap: GRID_GAP, paddingHorizontal: GRID_GAP },
+
   tile: { width: TILE, height: TILE },
   arBadge: {
     position: 'absolute', bottom: 5, right: 5,
@@ -145,4 +209,17 @@ const s = StyleSheet.create({
   empty: { alignItems: 'center', paddingTop: 48, paddingHorizontal: 32, gap: 10 },
   emptyTitle: { fontSize: 17, fontWeight: '700' },
   emptySub: { fontSize: 13, textAlign: 'center', lineHeight: 18 },
+
+  previewOverlay: {
+    flex: 1, backgroundColor: 'rgba(0,0,0,0.92)',
+    justifyContent: 'center', alignItems: 'center', padding: 16,
+  },
+  previewClose:  { position: 'absolute', top: 48, right: 20, padding: 8 },
+  previewImg:    { width: W - 32, height: W - 32, borderRadius: 8 },
+  previewDate:   { color: 'rgba(255,255,255,0.55)', fontSize: 12, marginTop: 10 },
+  previewDelete: {
+    flexDirection: 'row', alignItems: 'center', gap: 6, marginTop: 20,
+    backgroundColor: 'rgba(220,60,60,0.85)', paddingHorizontal: 20, paddingVertical: 10, borderRadius: 8,
+  },
+  previewDeleteText: { color: '#fff', fontWeight: '600', fontSize: 14 },
 });

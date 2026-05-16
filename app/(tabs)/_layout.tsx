@@ -53,6 +53,15 @@ export default function TabsLayout() {
         }}
       />
       <Tabs.Screen
+        name="creados"
+        options={{
+          title: 'Creados',
+          tabBarIcon: ({ color, focused }) => (
+            <Ionicons name={focused ? 'brush' : 'brush-outline'} size={24} color={color} />
+          ),
+        }}
+      />
+      <Tabs.Screen
         name="explore"
         options={{
           title: t('tab_explore'),

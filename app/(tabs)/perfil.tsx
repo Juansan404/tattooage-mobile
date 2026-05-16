@@ -567,6 +567,22 @@ export default function PerfilScreen() {
           )}
           <TouchableOpacity
             style={styles.menuItem}
+            onPress={() => { setMenuVisible(false); router.push('/crear-diseno'); }}
+          >
+            <Ionicons name="brush-outline" size={22} color={Colors.text} />
+            <Text style={styles.menuItemText}>Crear diseño</Text>
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity
+            style={styles.menuItem}
+            onPress={() => { setMenuVisible(false); router.push('/(tabs)/creados'); }}
+          >
+            <Ionicons name="images-outline" size={22} color={Colors.text} />
+            <Text style={styles.menuItemText}>Elementos Creados</Text>
+          </TouchableOpacity>
+          <View style={styles.menuDivider} />
+          <TouchableOpacity
+            style={styles.menuItem}
             onPress={() => { setMenuVisible(false); router.push('/ajustes'); }}
           >
             <Ionicons name="settings-outline" size={22} color={Colors.text} />

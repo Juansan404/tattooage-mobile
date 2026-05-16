@@ -553,6 +553,18 @@ export default function PerfilScreen() {
             <Text style={styles.menuItemText}>{t('settings_edit_profile')}</Text>
           </TouchableOpacity>
           <View style={styles.menuDivider} />
+          {rol === 'ARTISTA' && (
+            <>
+              <TouchableOpacity
+                style={styles.menuItem}
+                onPress={() => { setMenuVisible(false); router.push('/estudio'); }}
+              >
+                <Ionicons name="business-outline" size={22} color={Colors.text} />
+                <Text style={styles.menuItemText}>Mi estudio</Text>
+              </TouchableOpacity>
+              <View style={styles.menuDivider} />
+            </>
+          )}
           <TouchableOpacity
             style={styles.menuItem}
             onPress={() => { setMenuVisible(false); router.push('/ajustes'); }}

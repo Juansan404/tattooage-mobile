@@ -9,6 +9,7 @@ import { captureRef } from 'react-native-view-shot';
 import { Svg, Path, Defs, Pattern, Rect, G } from 'react-native-svg';
 import Ionicons from '@expo/vector-icons/Ionicons';
 import { useColors } from '../hooks/useColors';
+import { useAuthStore } from '../store/auth.store';
 import { disenosLocalesService } from '../services/disenos-locales.service';
 
 interface Point  { x: number; y: number; }
@@ -33,6 +34,7 @@ function pts2path(pts: Point[]): string {
 export default function CrearDisenoScreen() {
   const Colors = useColors();
   const router = useRouter();
+  const { idUsuario } = useAuthStore();
 
   const canvasRef  = useRef<View>(null);
   const strokesRef = useRef<Stroke[]>([]);
@@ -104,12 +106,12 @@ export default function CrearDisenoScreen() {
     ]);
 
   const guardar = async () => {
-    if (!nombre.trim() || saving) return;
+    if (!nombre.trim() || saving || !idUsuario) return;
     setSaving(true);
     try {
       if (!canvasRef.current) throw new Error('Canvas no disponible');
       const uri = await captureRef(canvasRef.current, { format: 'png', quality: 1, result: 'tmpfile' });
-      await disenosLocalesService.guardar(uri, nombre.trim());
+      await disenosLocalesService.guardar(uri, nombre.trim(), idUsuario);
       setModal(false);
       Alert.alert('Guardado', `"${nombre.trim()}" guardado en Elementos Creados.`, [
         { text: 'OK', onPress: () => router.back() },

@@ -7,7 +7,6 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
-import * as FileSystem from 'expo-file-system/legacy';
 import { useColors } from '../../hooks/useColors';
 import { useAuthStore } from '../../store/auth.store';
 import { disenosLocalesService, DisenoLocal } from '../../services/disenos-locales.service';
@@ -34,13 +33,14 @@ export default function ElementosCreadosScreen() {
   const [publicando, setPublicando]       = useState(false);
 
   const cargar = useCallback(async () => {
+    if (!idUsuario) return;
     setLoading(true);
     try {
-      setDisenos(await disenosLocalesService.listar());
+      setDisenos(await disenosLocalesService.listar(idUsuario));
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [idUsuario]);
 
   useFocusEffect(useCallback(() => { cargar(); }, [cargar]));
 
@@ -69,14 +69,9 @@ export default function ElementosCreadosScreen() {
     if (!publishTarget || !idUsuario) return;
     try {
       setPublicando(true);
-      // Leer el PNG local y convertirlo a base64
-      const b64 = await FileSystem.readAsStringAsync(publishTarget.uri, {
-        encoding: FileSystem.EncodingType.Base64,
-      });
-      const fotoUrl = `data:image/png;base64,${b64}`;
       await publicacionesService.crear({
         usuario: { idUsuario },
-        fotoUrl,
+        fotoUrl: publishTarget.uri,
         descripcion: descripcion.trim() || undefined,
       });
       setShowPublish(false);

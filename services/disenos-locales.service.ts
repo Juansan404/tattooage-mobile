@@ -1,5 +1,5 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import * as FileSystem from 'expo-file-system/legacy';
+import api from './api';
 
 export interface DisenoLocal {
   id: string;
@@ -8,48 +8,38 @@ export interface DisenoLocal {
   creadoEn: string;
 }
 
-const KEY = 'disenos_creados';
-const DIR = `${FileSystem.documentDirectory}disenos/`;
-
-async function ensureDir() {
-  const info = await FileSystem.getInfoAsync(DIR);
-  if (!info.exists) await FileSystem.makeDirectoryAsync(DIR, { intermediates: true });
+interface DisenoBackend {
+  idDiseno: number;
+  nombre: string;
+  fotoUrl: string;
+  creadoEn: string;
 }
 
-async function getAll(): Promise<DisenoLocal[]> {
-  const raw = await AsyncStorage.getItem(KEY);
-  return raw ? JSON.parse(raw) : [];
-}
-
-async function saveList(list: DisenoLocal[]) {
-  await AsyncStorage.setItem(KEY, JSON.stringify(list));
+function toLocal(d: DisenoBackend): DisenoLocal {
+  return {
+    id: String(d.idDiseno),
+    nombre: d.nombre,
+    uri: d.fotoUrl,
+    creadoEn: d.creadoEn,
+  };
 }
 
 export const disenosLocalesService = {
-  async listar(): Promise<DisenoLocal[]> {
-    return getAll();
+  async listar(idUsuario: number): Promise<DisenoLocal[]> {
+    const res = await api.get<DisenoBackend[]>(`/disenos-creados/usuario/${idUsuario}`);
+    return res.data.map(toLocal);
   },
 
-  async guardar(tempUri: string, nombre: string): Promise<DisenoLocal> {
-    await ensureDir();
-    const id = `diseno_${Date.now()}`;
-    const dest = `${DIR}${id}.png`;
-    await FileSystem.copyAsync({ from: tempUri, to: dest });
-
-    const diseno: DisenoLocal = { id, nombre, uri: dest, creadoEn: new Date().toISOString() };
-    const lista = await getAll();
-    lista.unshift(diseno);
-    await saveList(lista);
-    return diseno;
+  async guardar(tempUri: string, nombre: string, idUsuario: number): Promise<DisenoLocal> {
+    const b64 = await FileSystem.readAsStringAsync(tempUri, {
+      encoding: FileSystem.EncodingType.Base64,
+    });
+    const fotoUrl = `data:image/png;base64,${b64}`;
+    const res = await api.post<DisenoBackend>('/disenos-creados', { idUsuario, nombre, fotoUrl });
+    return toLocal(res.data);
   },
 
   async eliminar(id: string): Promise<void> {
-    const lista = await getAll();
-    const diseno = lista.find((d) => d.id === id);
-    if (diseno) {
-      const info = await FileSystem.getInfoAsync(diseno.uri);
-      if (info.exists) await FileSystem.deleteAsync(diseno.uri, { idempotent: true });
-    }
-    await saveList(lista.filter((d) => d.id !== id));
+    await api.delete(`/disenos-creados/${id}`);
   },
 };

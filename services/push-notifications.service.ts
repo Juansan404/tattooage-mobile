@@ -1,16 +1,19 @@
-import * as Notifications from 'expo-notifications';
-import * as Device from 'expo-device';
 import Constants from 'expo-constants';
+import * as Device from 'expo-device';
 import { Platform } from 'react-native';
 import api from './api';
 
-// Solo funciona en development builds y producción, no en Expo Go (SDK 53+)
 function isExpoGo(): boolean {
   return Constants.appOwnership === 'expo';
 }
 
 export async function registrarPushToken(idUsuario: number): Promise<void> {
+  // En Expo Go SDK 53+ las push remotas no están soportadas — saltar silenciosamente
   if (!Device.isDevice || isExpoGo()) return;
+
+  // require() dinámico: el módulo no se carga hasta aquí, evitando el efecto
+  // secundario de DevicePushTokenAutoRegistration en Expo Go
+  const Notifications = require('expo-notifications') as typeof import('expo-notifications');
 
   Notifications.setNotificationHandler({
     handleNotification: async () => ({

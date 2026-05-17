@@ -9,7 +9,7 @@
     "newArchEnabled": true,
     "scheme": "tattooage",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/logo_black.png",
       "resizeMode": "contain",
       "backgroundColor": "#0D0D0D"
     },
@@ -44,6 +44,14 @@
     "plugins": [
       "expo-router",
       "@react-native-community/datetimepicker",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/logo_black.png",
+          "color": "#C0392B",
+          "sounds": []
+        }
+      ],
       [
         "expo-camera",
         {

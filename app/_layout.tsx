@@ -11,6 +11,7 @@ import { useAuthStore } from '../store/auth.store';
 import { useThemeStore } from '../store/theme.store';
 import { useLanguageStore } from '../store/language.store';
 import { ThemeTransitionContext } from '../context/ThemeTransitionContext';
+import { registrarPushToken } from '../services/push-notifications.service';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -28,11 +29,17 @@ export default function RootLayout() {
   const isRunning   = useRef(false);
   const [curtainColor, setCurtainColor] = useState(DARK_BG);
 
+  const idUsuario = useAuthStore((s) => s.idUsuario);
+
   useEffect(() => {
     restoreSession();
     restore();
     restoreLang();
   }, []);
+
+  useEffect(() => {
+    if (idUsuario) registrarPushToken(idUsuario);
+  }, [idUsuario]);
 
   useEffect(() => {
     if (Platform.OS === 'android') {

@@ -14,8 +14,10 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useFocusEffect } from 'expo-router';
 import Ionicons from '@expo/vector-icons/Ionicons';
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 import { publicacionesService } from '../../services/publicaciones.service';
 import { notificacionesService } from '../../services/notificaciones.service';
+import { conversacionesService } from '../../services/conversaciones.service';
 import { Publicacion } from '../../types/publicacion.types';
 import { useAuthStore } from '../../store/auth.store';
 import { useThemeStore } from '../../store/theme.store';
@@ -119,6 +121,7 @@ export default function FeedScreen() {
   const [hasMore, setHasMore] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [noLeidas, setNoLeidas] = useState(0);
+  const [noLeidosMensajes, setNoLeidosMensajes] = useState(0);
 
   const nextPage = useRef(0);
   const fetching = useRef(false);
@@ -155,6 +158,9 @@ export default function FeedScreen() {
     if (!idUsuario) return;
     notificacionesService.countNoLeidas(idUsuario)
       .then(setNoLeidas)
+      .catch(() => {});
+    conversacionesService.countNoLeidos(idUsuario)
+      .then(setNoLeidosMensajes)
       .catch(() => {});
   }, [idUsuario]));
 
@@ -197,7 +203,7 @@ export default function FeedScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => router.push('/notificaciones')}
           >
-            <Ionicons name="heart-outline" size={26} color={Colors.text} />
+            <Ionicons name="notifications-outline" size={26} color={Colors.text} />
             {noLeidas > 0 && (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>{noLeidas > 99 ? '99+' : noLeidas}</Text>
@@ -209,7 +215,12 @@ export default function FeedScreen() {
             hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
             onPress={() => router.push('/conversaciones')}
           >
-            <Ionicons name="paper-plane-outline" size={26} color={Colors.text} />
+            <MaterialIcons name="message" size={26} color={Colors.text} />
+            {noLeidosMensajes > 0 && (
+              <View style={styles.badge}>
+                <Text style={styles.badgeText}>{noLeidosMensajes > 99 ? '99+' : noLeidosMensajes}</Text>
+              </View>
+            )}
           </TouchableOpacity>
         </View>
       </View>

@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Platform, Animated, Easing, Dimensions, View } from 'react-native';
+import { Platform, Animated, Easing, Dimensions, View, Alert } from 'react-native';
+import { useAlertStore } from '../store/alert.store';
+import { CustomAlert } from '../components/CustomAlert';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
@@ -30,6 +32,14 @@ export default function RootLayout() {
   const [curtainColor, setCurtainColor] = useState(DARK_BG);
 
   const idUsuario = useAuthStore((s) => s.idUsuario);
+  const showAlert = useAlertStore((s) => s.show);
+
+  // Sobrescribir Alert.alert global con el custom — sin tocar ningún otro archivo
+  useEffect(() => {
+    Alert.alert = (title, message?, buttons?, _options?) => {
+      showAlert(title, message, buttons as any);
+    };
+  }, [showAlert]);
 
   useEffect(() => {
     restoreSession();
@@ -88,6 +98,7 @@ export default function RootLayout() {
               animation: 'fade',
             }}
           />
+          <CustomAlert />
           <Animated.View
             pointerEvents="none"
             style={{

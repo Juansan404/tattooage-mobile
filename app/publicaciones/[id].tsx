@@ -240,11 +240,14 @@ export default function DetallePublicacionScreen() {
             )}
 
             <View style={styles.tags}>
-              {publicacion.estilo && (
-                <View style={styles.tag}>
-                  <Text style={styles.tagText}>{publicacion.estilo}</Text>
+              {(publicacion.estilos && publicacion.estilos.length > 0
+                ? publicacion.estilos.map(e => e.nombre)
+                : publicacion.estilo ? [publicacion.estilo] : []
+              ).map(nombre => (
+                <View key={nombre} style={styles.tag}>
+                  <Text style={styles.tagText}>{nombre}</Text>
                 </View>
-              )}
+              ))}
               {publicacion.zonaCuerpo && (
                 <View style={styles.tag}>
                   <Text style={styles.tagText}>{publicacion.zonaCuerpo}</Text>

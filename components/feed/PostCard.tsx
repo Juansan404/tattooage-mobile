@@ -129,7 +129,10 @@ export default function PostCard({ publicacion, onLike }: Props) {
   const [menuVisible, setMenuVisible] = useState(false);
   const [menuPos, setMenuPos] = useState({ top: 0, right: 16 });
 
-  const { idPublicacion, fotoUrl, descripcion, estilo, zonaCuerpo, creadoEn, usuario } = publicacion;
+  const { idPublicacion, fotoUrl, descripcion, estilo, estilos, zonaCuerpo, creadoEn, usuario } = publicacion;
+  const estilosVisibles: string[] = estilos && estilos.length > 0
+    ? estilos.map(e => e.nombre)
+    : estilo ? [estilo] : [];
 
   useEffect(() => {
     if (!idUsuario) return;
@@ -287,11 +290,11 @@ export default function PostCard({ publicacion, onLike }: Props) {
             {descripcion}
           </Text>
         ) : null}
-        {estilo && (
-          <TouchableOpacity activeOpacity={0.7}>
-            <Text style={styles.hashtag}>#{estilo.toLowerCase().replace(/\s+/g, '')}</Text>
+        {estilosVisibles.map(e => (
+          <TouchableOpacity key={e} activeOpacity={0.7}>
+            <Text style={styles.hashtag}>#{e.toLowerCase().replace(/\s+/g, '')}</Text>
           </TouchableOpacity>
-        )}
+        ))}
       </View>
 
       <ComentariosModal

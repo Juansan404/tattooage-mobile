@@ -291,7 +291,7 @@ export default function PostCard({ publicacion, onLike }: Props) {
           </Text>
         ) : null}
         {estilosVisibles.length > 0 && (
-          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4, paddingHorizontal: 14 }}>
+          <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 4 }}>
             {estilosVisibles.map(e => (
               <TouchableOpacity key={e} activeOpacity={0.7}>
                 <Text style={styles.hashtag}>#{e.toLowerCase().replace(/\s+/g, '')}</Text>

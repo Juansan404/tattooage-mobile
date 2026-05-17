@@ -161,6 +161,8 @@ export default function NuevaPublicacionScreen() {
     }
   }, [rol]);
 
+  const submitting = useRef(false);
+
   const [imagenUri, setImagenUri] = useState('');
   const [imagenBase64, setImagenBase64] = useState('');
   const [descripcion, setDescripcion] = useState('');
@@ -218,10 +220,8 @@ export default function NuevaPublicacionScreen() {
   };
 
   const handlePublicar = async () => {
-    if (!imagenBase64) {
-      Alert.alert('Error', 'Selecciona una imagen antes de publicar.');
-      return;
-    }
+    if (!imagenBase64 || submitting.current) return;
+    submitting.current = true;
     try {
       setLoading(true);
       const pub = await publicacionesService.crear({
@@ -251,6 +251,7 @@ export default function NuevaPublicacionScreen() {
       Alert.alert('Error', 'No se pudo publicar. Inténtalo más tarde.');
     } finally {
       setLoading(false);
+      submitting.current = false;
     }
   };
 

@@ -15,7 +15,20 @@ import { disenosLocalesService } from '../services/disenos-locales.service';
 interface Point  { x: number; y: number; }
 interface Stroke { path: string; color: string; width: number; erase: boolean; }
 
-const PALETTE = ['#000000', '#3a3a3a', '#8b0000', '#1a3a6c', '#1a5c2a', '#8b4513', '#6b006b', '#FFFFFF'];
+const PALETTE = [
+  // Neutros
+  '#000000', '#3a3a3a', '#7a7a7a', '#c0c0c0', '#FFFFFF',
+  // Rojos / naranjas
+  '#8b0000', '#C0392B', '#e74c3c', '#e67e22', '#f39c12',
+  // Amarillos / verdes
+  '#f1c40f', '#27ae60', '#1a5c2a', '#16a085', '#1abc9c',
+  // Azules / morados
+  '#1a3a6c', '#2980b9', '#3498db', '#6b006b', '#9b59b6',
+  // Rosas
+  '#e91e8c', '#ff69b4',
+  // Marrones / piel
+  '#8b4513', '#a0522d', '#d2691e', '#f4a460',
+];
 const SIZES   = [2, 6, 14];
 
 function pts2path(pts: Point[]): string {
@@ -169,10 +182,6 @@ export default function CrearDisenoScreen() {
           {...panResponder.panHandlers}
         >
           <Svg width="100%" height="100%" style={StyleSheet.absoluteFill}>
-            {/*
-              destination-out: los trazos de borrador "queman" lo que hay debajo,
-              dejando píxeles transparentes. Funciona dentro del mismo grupo SVG.
-            */}
             <G>
               {strokes.map((st, i) =>
                 st.erase ? (
@@ -199,7 +208,6 @@ export default function CrearDisenoScreen() {
                   />
                 )
               )}
-              {/* Trazo vivo */}
               {livePath ? (
                 eraser ? (
                   <Path
@@ -335,7 +343,7 @@ const styles = (Colors: ReturnType<typeof import('../hooks/useColors').useColors
     canvas:           { backgroundColor: 'transparent' },
 
     toolbar:         { backgroundColor: Colors.surface, borderTopWidth: 0.5, borderTopColor: Colors.border, paddingHorizontal: 14, paddingTop: 10, paddingBottom: 14, gap: 12 },
-    palette:         { flexDirection: 'row', alignItems: 'center', gap: 10 },
+    palette:         { flexDirection: 'row', alignItems: 'center', gap: 10, paddingVertical: 4, paddingHorizontal: 4 },
     colorDot:        { width: 30, height: 30, borderRadius: 15, borderWidth: 2.5, borderColor: 'transparent' },
     colorDotActive:  { borderColor: Colors.primary, transform: [{ scale: 1.15 }] },
 

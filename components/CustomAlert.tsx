@@ -1,4 +1,4 @@
-import { Modal, View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { Modal, View, Text, Pressable, StyleSheet } from 'react-native';
 import { useAlertStore, AlertButton } from '../store/alert.store';
 import { useColors } from '../hooks/useColors';
 
@@ -13,32 +13,36 @@ export function CustomAlert() {
 
   const buttonColor = (style?: AlertButton['style']) => {
     if (style === 'destructive') return '#e94560';
-    if (style === 'cancel') return Colors.textMuted;
+    if (style === 'cancel') return Colors.textSecondary;
     return Colors.primary;
   };
 
+  const isColumn = buttons.length > 2;
+
   return (
     <Modal visible={visible} transparent animationType="fade" statusBarTranslucent>
-      <View style={s.backdrop}>
-        <View style={[s.card, { backgroundColor: Colors.surface, borderColor: Colors.border }]}>
+      <Pressable style={s.backdrop} onPress={hide}>
+        <Pressable style={[s.card, { backgroundColor: Colors.surface, borderColor: Colors.border }]}>
           <Text style={[s.title, { color: Colors.text }]}>{title}</Text>
           {!!message && (
             <Text style={[s.message, { color: Colors.textSecondary }]}>{message}</Text>
           )}
           <View style={[s.divider, { backgroundColor: Colors.border }]} />
-          <View style={buttons.length > 2 ? s.buttonsColumn : s.buttonsRow}>
+          <View style={isColumn ? s.buttonsColumn : s.buttonsRow}>
             {buttons.map((btn, i) => (
-              <TouchableOpacity
+              <Pressable
                 key={i}
-                style={[
+                style={({ pressed }) => [
                   s.btn,
-                  buttons.length <= 2 && i < buttons.length - 1 && {
+                  isColumn && s.btnColumn,
+                  !isColumn && i < buttons.length - 1 && {
                     borderRightWidth: 0.5,
                     borderRightColor: Colors.border,
                   },
+                  isColumn && i > 0 && { borderTopWidth: 0.5, borderTopColor: Colors.border },
+                  pressed && { backgroundColor: Colors.surfaceLight },
                 ]}
                 onPress={() => handlePress(btn)}
-                activeOpacity={0.6}
               >
                 <Text style={[
                   s.btnText,
@@ -47,11 +51,11 @@ export function CustomAlert() {
                 ]}>
                   {btn.text}
                 </Text>
-              </TouchableOpacity>
+              </Pressable>
             ))}
           </View>
-        </View>
-      </View>
+        </Pressable>
+      </Pressable>
     </Modal>
   );
 }
@@ -68,7 +72,6 @@ const s = StyleSheet.create({
     width: '100%',
     borderRadius: 16,
     borderWidth: 0.5,
-    overflow: 'hidden',
   },
   title: {
     fontSize: 16,
@@ -77,6 +80,7 @@ const s = StyleSheet.create({
     paddingTop: 20,
     paddingHorizontal: 20,
     paddingBottom: 6,
+    borderRadius: 16,
   },
   message: {
     fontSize: 14,
@@ -86,13 +90,17 @@ const s = StyleSheet.create({
     paddingBottom: 16,
   },
   divider: { height: 0.5 },
-  buttonsRow: { flexDirection: 'row' },
-  buttonsColumn: { flexDirection: 'column' },
+  buttonsRow: { flexDirection: 'row', borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
+  buttonsColumn: { flexDirection: 'column', borderBottomLeftRadius: 16, borderBottomRightRadius: 16, overflow: 'hidden' },
   btn: {
     flex: 1,
     paddingVertical: 14,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  btnColumn: {
+    flex: 0,
+    paddingVertical: 15,
   },
   btnText: {
     fontSize: 15,
